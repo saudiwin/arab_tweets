@@ -1,0 +1,16 @@
+%(C|c)airo%
+%(A|a)lexandria%
+%(S|s)anaa%
+%(T|t)unis%
+%(T|t)ripoli%
+%(B|b)enghazi%
+%(A|a)lgiers%
+%(M|m)anama%
+%(D|d)amascus%
+%(A|a)mman%
+%(R|r)abat%
+%(C|c)asablanca%
+%(M|m)uscat%
+%(S|s)ohar%
+%(R|r)iyadh%
+%(Q|q)atif%
