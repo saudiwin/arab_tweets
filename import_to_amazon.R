@@ -74,5 +74,5 @@ dbListTables(conn)
 # Check whether uploaded data matches the original files
 # Check based on IDs
 
-user_ids <- dbGetQuery(conn,'SELECT unique_id FROM users;')
+user_ids <- dbGetQuery(conn,'SELECT * FROM users;')
 tweet_ids <- dbGetQuery(conn,'SELECT tweet_id FROM tweets;')
