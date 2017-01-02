@@ -14,8 +14,13 @@ twitter_token <- create_token(app = "For Analysis II", # whatever you named app
                               consumer_secret = "gfZOqDIGpzkr53UXHrsqgzWRwIiqlerm982NWPcxP1hIf2uwuV")
 
 
+
 # Loop over people and get tweets
 all_tweets <- lapply(user_ids$username[1:5],function(x) {
     y <- get_timeline(x)
     return(y)
 })
+
+# What is the purpose of this file?
+#practice & change
+
