@@ -15,7 +15,7 @@ twitter_token <- create_token(app = "For Analysis II", # whatever you named app
 
 
 # Loop over people and get tweets
-all_tweets <- lapply(user_ids$username,function(x) {
+all_tweets <- lapply(user_ids$username[1:5],function(x) {
     y <- get_timeline(x)
     return(y)
 })
