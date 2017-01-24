@@ -1,21 +1,149 @@
 # tweet functions
 
-all_time <- function(token,user) {
+wrapper_func <- function(x,tokens=NULL,all_users=NULL,breaks=NULL,city=NULL,
+                         sql_db=NULL) {
+  if(!file.exists('tweet_download_output.txt')) {
+    file.create('tweet_download_output.txt')
+  }
+  sink('tweet_download_output.txt',append = TRUE)
+  these_users <- all_users[breaks==x]
+  out_list <- lapply(these_users,all_time,token=tokens[[x]],these_users=these_users,x=x,city=city,
+                     sql_db=sql_db)
+  sink()
+  return(out_list)
+}
+
+save_sqlite <- function(dataset,sql_db,city,user_attributes)  {
+  browser()
+  # modify the data frame to convert dates to strings
+  # also check to see if coordinates is a matrix (for whatever reason)
+  check_col <- function(x) {
+    if((lubridate::is.POSIXct(x))) {
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  }
+  if(class(dataset$coordinates)=='matrix') {
+    dataset$coordinates <- apply(dataset$coordinates,1,paste,collapse=' ')
+  }
+  dataset <- mutate(dataset,followers=user_attributes$followers_count,
+                    friends=user_attributes$friends_count,
+                    account_data=as.character(user_attributes$created_at),
+                    location=as.character(user_attributes$location)) %>% 
+    mutate_if(check_col,as.character)
+    
   
-  current_rate <- rate_limit(twitter_token,'statuses/user_timeline')$remaining
-  first_round <- get_timeline(user,n=current_rate)
-  maxid <- first_round$status_id[nrow(first_round)] %>% as.numeric
-  maxid <- maxid + 1
-  maxid <- as.character(maxid)
-  while(sum(first_round$created_at<'2014-01-01')<1) {
-    current_rate <- rate_limit(twitter_token,'statuses/user_timeline')$remaining
-    second_round <- get_timeline(user,n=current_rate,maxID=maxid)
-    first_round <- bind_rows(first_round,second_round[3:35])
-    first_round <- filter(first_round,!is.na(text))
-    maxid <- first_round$status_id[nrow(first_round)] %>% as.numeric
-    maxid <- maxid + 1
-    maxid <- as.character(maxid)
+  # check to see if table exists, if it doesn't, create one
+  
+  all_tables <- RSQLite::dbListTables(sql_db)
+  if(!any(paste0(city,"_tweets") %in% all_tables)) {
+    RSQLite::dbWriteTable(sql_db,paste0(city,"_tweets"),dataset)
+  } else {
+    RSQLite::dbWriteTable(sql_db,paste0(city,"_tweets"),dataset,append=TRUE)
+  }
+  }
+
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
+  num_tokens <- length(token)
+  # Start with first token, then move on until all tokens have been exhausted
+  current_token <- 1
+  print(paste0('Token ',x,' now on user ',user,' who is ',which(these_users==user),'th of ',length(these_users),
+               ' users.'))
+  reset <- 15
+  current_rate <- 1000
+  test_d <- try(get_timeline(user,n=current_rate,token=token[[current_token]]))
+  if(class(test_d)=='try-error') {
+    if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+      if(num_tokens>1) {
+        if(current_token<num_tokens) {
+          current_token <- current_token+1
+        } else {
+          current_token <- 1
+        }
+        test_d <- try(get_timeline(user,n=current_rate,token=token[[current_token]]))
+        if(class(test_d)=='try-error') {
+          if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+            print(paste0('Sleeping for ',reset,' minutes.'))
+            Sys.sleep(reset*60)
+          } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+            return(paste0(user,' finished without any tweets.'))
+          } else {
+            stop(paste0('Unknown error: ',test_d[1]))
+          }
+        } else {
+          first_round <- test_d
+        }
+      }
+    } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+      return(paste0(user,' finished without any tweets.'))
+    } else {
+      stop(paste0('Unknown error: ',test_d[1]))
+    }
+  } else {
+    first_round <- test_d
+    
+  }
+  if(nrow(first_round)==0) {
+    return(paste0(user,' finished without any tweets.'))
+  }
+  maxid <- first_round$status_id[nrow(first_round)]
+  iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
+  iter <- iter - 1
+  maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
+  user_data <- attr(first_round,'users')
+  while(sum(first_round$created_at<'2011-04-01')<1) {
+
+    test_d <- try(get_timeline(user,n=current_rate,max_id=maxid,token=token[[current_token]]))
+    if(class(test_d)=='try-error') {
+      if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+        if(num_tokens>1) {
+          if(current_token<num_tokens) {
+            current_token <- current_token+1
+          } else {
+            current_token <- 1
+          }
+          test_d <- try(get_timeline(user,n=current_rate,token=token[[current_token]]))
+          if(class(test_d)=='try-error') {
+            if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+              print(paste0('Sleeping for ',reset,' minutes.'))
+              Sys.sleep(reset*60)
+            } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+              save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
+              return(paste0(user,' finished successfully.'))
+            } else {
+              stop(paste0('Unknown error: ',test_d[1]))
+            }
+          }
+        }
+        print(paste0('Sleeping for ',reset,' minutes.'))
+        # System sleep in seconds using reset minutes
+        Sys.sleep(reset*60)
+      } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+        save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
+        return(paste0(user,' finished successfully.'))
+      } else {
+        stop(paste0('Unknown error: ',test_d[1]))
+      }
+    } else {
+      second_round <- test_d
+    }
+    lengths <- sapply(second_round,length)
+    
+    first_round <- bind_rows(first_round,second_round)
+    maxid <- first_round$status_id[nrow(first_round)]
+    iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
+    iter <- iter - 1
+    maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
+    print(paste0("     Now on tweet created at ",first_round$created_at[nrow(first_round)],
+                 ' and tweet ID of ',first_round$status_id[nrow(first_round)]))
   }
   
-  return(first_round)
+  save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
+  return(paste0(user,' finished successfully.'))
 }
