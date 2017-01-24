@@ -2,4 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
+tweets
 .httr-oauth
