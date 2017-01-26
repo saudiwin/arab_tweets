@@ -2,6 +2,7 @@
 
 wrapper_func <- function(x,tokens=NULL,all_users=NULL,breaks=NULL,city=NULL,
                          sql_db=NULL) {
+  
   if(!file.exists('tweet_download_output.txt')) {
     file.create('tweet_download_output.txt')
   }
@@ -14,7 +15,7 @@ wrapper_func <- function(x,tokens=NULL,all_users=NULL,breaks=NULL,city=NULL,
 }
 
 save_sqlite <- function(dataset,sql_db,city,user_attributes)  {
-  browser()
+
   # modify the data frame to convert dates to strings
   # also check to see if coordinates is a matrix (for whatever reason)
   check_col <- function(x) {
@@ -36,12 +37,17 @@ save_sqlite <- function(dataset,sql_db,city,user_attributes)  {
   
   # check to see if table exists, if it doesn't, create one
   
-  all_tables <- RSQLite::dbListTables(sql_db)
+  con <- dbConnect(RSQLite::SQLite(), sql_db)
+  
+  all_tables <- RSQLite::dbListTables(con)
   if(!any(paste0(city,"_tweets") %in% all_tables)) {
-    RSQLite::dbWriteTable(sql_db,paste0(city,"_tweets"),dataset)
+    RSQLite::dbWriteTable(con,paste0(city,"_tweets"),dataset)
   } else {
-    RSQLite::dbWriteTable(sql_db,paste0(city,"_tweets"),dataset,append=TRUE)
+    # Put in a check to make sure that the columns are in the right order
+    dataset <- select(dataset,one_of(RSQLite::dbListFields(con,paste0(city,"_tweets"))))
+    RSQLite::dbWriteTable(con,paste0(city,"_tweets"),dataset,append=TRUE)
   }
+  dbDisconnect(con)
   }
 
 Mode <- function(x) {

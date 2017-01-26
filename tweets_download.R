@@ -33,7 +33,7 @@ twitter_tokens <- list(list(create_token(app = "For Analysis II", # whatever you
 
 # Get unique Cairo usernames
 tweets_text <- readRDS('tweets/cairo_tweets.rds')
-cairo_user <- unique(tweets_text$username)[1:20]
+cairo_user <- unique(tweets_text$username)[1:1000]
 
 # City to process 
 city <- 'Cairo'
@@ -45,20 +45,17 @@ breaks <- c(breaks,rep(length(twitter_tokens),length(cairo_user)-length(breaks))
 
 # Need to make an RSQLite to store the data locally
 
-mydb <- dbConnect(RSQLite::SQLite(), paste0(city,'.sqlite'))
+time1 <- Sys.time()
 
-finished <- mclapply(1:length(twitter_tokens),wrapper_func,tokens=twitter_tokens,all_users=cairo_user,
-                       breaks=breaks,city=city,sql_db=mydb,mc.cores=length(twitter_tokens))
+finished <- lapply(1:length(twitter_tokens),wrapper_func,tokens=twitter_tokens,all_users=cairo_user,
+                       breaks=breaks,city=city,sql_db=paste0(city,'.sqlite'))
+
+time2 <- Sys.time()
+#,mc.cores=length(twitter_tokens)
 dbListTables(mydb)
 dbListFields(mydb,'Cairo_tweets')
-check_table <- DBI::dbGetQuery(mydb,'SELECT * from Cairo_tweets where screen_name="Korayem"')
-#mc.cores=length(twitter_tokens)
-# get_tweets <- unlist(get_tweets,recursive = FALSE)
-# get_tweets <- lapply(get_tweets,function(x) {
-#   if(!is.na(x)) return(x)
-# })
-# 
-# out_tweets <- bind_rows(get_tweets)
+check_table <- DBI::dbGetQuery(mydb,'SELECT * from Cairo_tweets')
+
 
 
 
