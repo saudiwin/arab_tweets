@@ -28,6 +28,18 @@ save_sqlite <- function(dataset,sql_db,city,user_attributes)  {
   if(class(dataset$coordinates)=='matrix') {
     dataset$coordinates <- apply(dataset$coordinates,1,paste,collapse=' ')
   }
+  #convert user attributes to data.frame if it is a list
+  if(!is.data.frame(user_attributes)) {
+    user_attributes <- lapply(user_attributes,function(x) x[1])
+    all_names <- names(user_attributes)
+    user_attributes <- user_attributes[!duplicated(all_names)]
+    user_attributes <- as_data_frame(user_attributes)
+  }
+  #Sometimes multiple user attributes are returned, but we only need the first row
+  if(nrow(user_attributes)>1) {
+    user_attributes <- slice(user_attributes,1L)
+  }
+  
   dataset <- mutate(dataset,followers=user_attributes$followers_count,
                     friends=user_attributes$friends_count,
                     account_data=as.character(user_attributes$created_at),
@@ -85,17 +97,20 @@ all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
         } else {
           first_round <- test_d
         }
+      } else {
+        print(paste0('Sleeping for ',reset,' minutes.'))
+        Sys.sleep(reset*60)
       }
     } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
       return(paste0(user,' finished without any tweets.'))
     } else {
-      stop(paste0('Unknown error: ',test_d[1]))
+      stop(paste0('Unknown error on user ',user,': ',test_d[1]))
     }
   } else {
     first_round <- test_d
     
   }
-  if(nrow(first_round)==0) {
+  if(nrow(first_round)==0 || all(is.na(first_round$created_at))) {
     return(paste0(user,' finished without any tweets.'))
   }
   maxid <- first_round$status_id[nrow(first_round)]
@@ -103,6 +118,7 @@ all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
   iter <- iter - 1
   maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
   user_data <- attr(first_round,'users')
+
   while(sum(first_round$created_at<'2011-04-01')<1) {
 
     test_d <- try(get_timeline(user,n=current_rate,max_id=maxid,token=token[[current_token]]))
@@ -123,18 +139,19 @@ all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
               save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
               return(paste0(user,' finished successfully.'))
             } else {
-              stop(paste0('Unknown error: ',test_d[1]))
+              stop(paste0('Unknown error on user ',user,': ',test_d[1]))
             }
           }
-        }
+        } else {
         print(paste0('Sleeping for ',reset,' minutes.'))
         # System sleep in seconds using reset minutes
         Sys.sleep(reset*60)
+        }
       } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
         save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
         return(paste0(user,' finished successfully.'))
       } else {
-        stop(paste0('Unknown error: ',test_d[1]))
+        stop(paste0('Unknown error on user ',user,': ',test_d[1]))
       }
     } else {
       second_round <- test_d
