@@ -1,5 +1,6 @@
 # tweet functions
 
+# Only for mclapply, which currently doesn't work
 wrapper_func <- function(x,tokens=NULL,all_users=NULL,breaks=NULL,city=NULL,
                          sql_db=NULL) {
   
@@ -8,7 +9,7 @@ wrapper_func <- function(x,tokens=NULL,all_users=NULL,breaks=NULL,city=NULL,
   }
   sink('tweet_download_output.txt',append = TRUE)
   these_users <- all_users[breaks==x]
-  out_list <- lapply(these_users,all_time,token=tokens[[x]],these_users=these_users,x=x,city=city,
+  out_list <- lapply(these_users,all_time,token=tokens,these_users=these_users,x=x,city=city,
                      sql_db=sql_db)
   sink()
   return(out_list)
@@ -67,15 +68,19 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
+all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL) {
+
   num_tokens <- length(token)
   # Start with first token, then move on until all tokens have been exhausted
   current_token <- 1
-  print(paste0('Token ',x,' now on user ',user,' who is ',which(these_users==user),'th of ',length(these_users),
+  print(paste0('Token ',current_token,' now on user ',user,' who is ',which(these_users==user),'th of ',length(these_users),
                ' users.'))
+  
   reset <- 15
   current_rate <- 1000
-  test_d <- try(get_timeline(user,n=current_rate,token=token[[current_token]]))
+
+  test_d <- try(get_timeline(user=user,n=current_rate,token=token[[current_token]]))
+  
   if(class(test_d)=='try-error') {
     if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
       if(num_tokens>1) {
@@ -104,15 +109,18 @@ all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
     } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
       return(paste0(user,' finished without any tweets.'))
     } else {
+      if(!is.data.frame(first_round)) {
+        return(paste0(user,' finished without any tweets.'))
+      } else if (nrow(first_round)==0 || all(is.na(first_round$created_at))) {
+        return(paste0(user,' finished without any tweets.'))
+      }
       stop(paste0('Unknown error on user ',user,': ',test_d[1]))
     }
   } else {
     first_round <- test_d
     
   }
-  if(nrow(first_round)==0 || all(is.na(first_round$created_at))) {
-    return(paste0(user,' finished without any tweets.'))
-  }
+
   maxid <- first_round$status_id[nrow(first_round)]
   iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
   iter <- iter - 1
@@ -139,6 +147,7 @@ all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
               save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
               return(paste0(user,' finished successfully.'))
             } else {
+              
               stop(paste0('Unknown error on user ',user,': ',test_d[1]))
             }
           }
@@ -151,6 +160,11 @@ all_time <- function(user,token,these_users=NULL,x=NULL,city=NULL,sql_db=NULL) {
         save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
         return(paste0(user,' finished successfully.'))
       } else {
+        if(!is.data.frame(first_round)) {
+          return(paste0(user,' finished without any tweets.'))
+        } else if (nrow(first_round)==0 || all(is.na(first_round$created_at))) {
+          return(paste0(user,' finished without any tweets.'))
+        }
         stop(paste0('Unknown error on user ',user,': ',test_d[1]))
       }
     } else {
