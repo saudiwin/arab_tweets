@@ -68,7 +68,7 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL) {
+all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=NULL) {
 
   num_tokens <- length(token)
   # Start with first token, then move on until all tokens have been exhausted
@@ -107,18 +107,16 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL) {
         Sys.sleep(reset*60)
       }
     } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
-      return(paste0(user,' finished without any tweets.'))
+      return(paste0(user,' finished without any tweets and a subscript out of bound error on first try. Is this account de-activated?'))
     } else {
-      if(!is.data.frame(first_round)) {
-        return(paste0(user,' finished without any tweets.'))
-      } else if (nrow(first_round)==0 || all(is.na(first_round$created_at))) {
-        return(paste0(user,' finished without any tweets.'))
-      }
-      stop(paste0('Unknown error on user ',user,': ',test_d[1]))
+        return(paste0(user,' finished without any tweets and an unknown error: ',test_d[1]))
     }
   } else {
+    #If no error, proceed as normal and see if there are any more tweets to download
     first_round <- test_d
-    
+    if(nrow(first_round)==0) {
+      return(paste0(user,' finished without any tweets.'))
+    }
   }
 
   maxid <- first_round$status_id[nrow(first_round)]
@@ -126,8 +124,10 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL) {
   iter <- iter - 1
   maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
   user_data <- attr(first_round,'users')
-
-  while(sum(first_round$created_at<'2011-04-01')<1) {
+  
+  
+  #Loop over tweets until we reach the date that our GNIP data begins
+  while(sum(first_round$created_at<end_date)<1) {
 
     test_d <- try(get_timeline(user,n=current_rate,max_id=maxid,token=token[[current_token]]))
     if(class(test_d)=='try-error') {

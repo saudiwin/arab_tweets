@@ -63,25 +63,21 @@ twitter_tokens <- list(
 
 
 # Get unique Cairo usernames
-tweets_text <- readRDS('tweets/cairo_users.rds')
-cairo_user <- unique(tweets_text$username[1:10])
+tweets_text <- readRDS('tweets/cairo_tweets.rds')
+cairo_user <- unique(tweets_text$username)
 
 # City to process 
 city <- 'Cairo'
-
-# divide users into 4 parts for parallel
 
 # Need to make an RSQLite to store the data locally
  
 sink('tweets_download_log.txt',append=TRUE)
 time1 <- Sys.time()
 out_list <- lapply(cairo_user,all_time,token=twitter_tokens,these_users=cairo_user,city=city,
-                   sql_db=paste0(city,'.sqlite'))
+                   sql_db=paste0(city,'.sqlite'),end_date='2011-04-01')
 time2 <- Sys.time()
 sink()
 
-
-#,mc.cores=length(twitter_tokens)
 
 #Check and make sure that the tweets are loaded correctly
 
