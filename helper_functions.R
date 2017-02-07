@@ -146,6 +146,7 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
             if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
               print(paste0('Sleeping for ',reset,' minutes.'))
               Sys.sleep(reset*60)
+              second_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
             } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
               save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
               return(paste0(user,' finished successfully.'))
@@ -158,23 +159,19 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
         print(paste0('Sleeping for ',reset,' minutes.'))
         # System sleep in seconds using reset minutes
         Sys.sleep(reset*60)
+        second_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
         }
       } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
         save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
         return(paste0(user,' finished successfully.'))
       } else {
-        if(!is.data.frame(first_round)) {
-          return(paste0(user,' finished without any tweets.'))
-        } else if (nrow(first_round)==0 || all(is.na(first_round$created_at))) {
-          return(paste0(user,' finished without any tweets.'))
-        }
         stop(paste0('Unknown error on user ',user,': ',test_d[1]))
       }
     } else {
       second_round <- test_d
     }
-    lengths <- sapply(second_round,length)
     
+    if(is.data.frame(second_round)) {
     first_round <- bind_rows(first_round,second_round)
     maxid <- first_round$status_id[nrow(first_round)]
     iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
@@ -182,6 +179,10 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
     maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
     print(paste0("     Now on tweet created at ",first_round$created_at[nrow(first_round)],
                  ' and tweet ID of ',first_round$status_id[nrow(first_round)]))
+    } else {
+      # If somehow it didn't work, just write out the tweets already downloaded
+      break
+    } 
   }
   
   save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
