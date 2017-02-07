@@ -37,7 +37,7 @@ save_sqlite <- function(dataset,sql_db,city,user_attributes)  {
     user_attributes <- as_data_frame(user_attributes)
   } else {
     all_names <- names(user_attributes)
-    user_attributes <- user_attributes[[!duplicated(all_names)]]
+    user_attributes <- user_attributes[!duplicated(all_names)]
   }
   #Sometimes multiple user attributes are returned, but we only need the first row
   if(nrow(user_attributes)>1) {
