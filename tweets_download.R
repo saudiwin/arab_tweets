@@ -36,7 +36,7 @@ source('helper_functions.R')
 #                  consumer_secret = "NijPrXjKyrzpAWZbrSB6gPXoZLK7Ot0evrSSxFehvrNnuWMuqO")
 #   ))
 
-twitter_tokens <- list(list(
+twitter_tokens <- list(
     create_token(app = "For Analysis II", # whatever you named app
                  consumer_key = "6ae7rNvww5q13Kc86d8YvvLZG",
                  consumer_secret = "gfZOqDIGpzkr53UXHrsqgzWRwIiqlerm982NWPcxP1hIf2uwuV"),
@@ -58,22 +58,19 @@ twitter_tokens <- list(list(
     create_token(app = "For Analysis VIII", # whatever you named app
                  consumer_key = "NKcT4JwM45bkXdPb09jyWui2B",
                  consumer_secret = "NijPrXjKyrzpAWZbrSB6gPXoZLK7Ot0evrSSxFehvrNnuWMuqO")
-  ))
+  )
                        
 
 
 # Get unique Cairo usernames
-tweets_text <- readRDS('tweets/cairo_tweets.rds')
-cairo_user <- unique(tweets_text$username[1:1000])
+tweets_text <- readRDS('tweets/cairo_users.rds')
+cairo_user <- unique(tweets_text$username[1:10])
 
 # City to process 
 city <- 'Cairo'
 
 # divide users into 4 parts for parallel
 
-# breaks <- rep(1:length(twitter_tokens),each=floor(length(cairo_user)/length(twitter_tokens)))
-# breaks <- c(breaks,rep(length(twitter_tokens),length(cairo_user)-length(breaks)))
- breaks <- rep(x = 1,times=length(cairo_user))
 # Need to make an RSQLite to store the data locally
  
 sink('tweets_download_log.txt',append=TRUE)
@@ -85,6 +82,9 @@ sink()
 
 
 #,mc.cores=length(twitter_tokens)
+
+#Check and make sure that the tweets are loaded correctly
+
 mydb <- dbConnect(RSQLite::SQLite(),paste0(city,'.sqlite'))
 dbListTables(mydb)
 dbListFields(mydb,'Cairo_tweets')
