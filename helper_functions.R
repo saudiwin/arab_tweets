@@ -154,6 +154,8 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
               
               stop(paste0('Unknown error on user ',user,': ',test_d[1]))
             }
+          } else {
+            second_round <- test_d
           }
         } else {
         print(paste0('Sleeping for ',reset,' minutes.'))
