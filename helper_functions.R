@@ -72,7 +72,7 @@ Mode <- function(x) {
 }
 
 all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=NULL) {
-
+  browser()
   num_tokens <- length(token)
   # Start with first token, then move on until all tokens have been exhausted
   current_token <- 1
