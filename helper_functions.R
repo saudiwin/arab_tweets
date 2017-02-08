@@ -123,7 +123,7 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
     first_round <- test_d
   }
   
-  if(nrow(first_round)==0 || all(is.na(first_round$created_at))) {
+  if(nrow(first_round)==0) {
     return(paste0(user,' finished without any tweets.'))
   }
   
