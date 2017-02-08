@@ -117,11 +117,12 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
   } else {
     #If no error, proceed as normal and see if there are any more tweets to download
     first_round <- test_d
-    if(nrow(first_round)==0) {
-      return(paste0(user,' finished without any tweets.'))
-    }
   }
-
+  
+  if(nrow(first_round)==0) {
+    return(paste0(user,' finished without any tweets.'))
+  }
+  
   maxid <- first_round$status_id[nrow(first_round)]
   iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
   iter <- iter - 1
