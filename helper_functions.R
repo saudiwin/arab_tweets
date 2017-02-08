@@ -97,6 +97,7 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
           if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
             print(paste0('Sleeping for ',reset,' minutes.'))
             Sys.sleep(reset*60)
+            first_round <- try(get_timeline(user,n=current_rate,token=token[[current_token]]))
           } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
             return(paste0(user,' finished without any tweets.'))
           } else {
@@ -108,9 +109,12 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
       } else {
         print(paste0('Sleeping for ',reset,' minutes.'))
         Sys.sleep(reset*60)
+        first_round <- try(get_timeline(user,n=current_rate,token=token[[current_token]]))
       }
     } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
       return(paste0(user,' finished without any tweets and a subscript out of bound error on first try. Is this account de-activated?'))
+    } else if(grepl(pattern='curl::curl_fetch_memory',x=test_d[1])) {
+      first_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
     } else {
         return(paste0(user,' finished without any tweets and an unknown error: ',test_d[1]))
     }
@@ -167,6 +171,8 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
       } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
         save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
         return(paste0(user,' finished successfully.'))
+      } else if(grepl(pattern='curl::curl_fetch_memory',x=test_d[1])) {
+        second_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
       } else {
         stop(paste0('Unknown error on user ',user,': ',test_d[1]))
       }
