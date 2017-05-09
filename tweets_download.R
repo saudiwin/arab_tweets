@@ -63,31 +63,34 @@ twitter_tokens <- list(
 
 
 # Get unique Cairo usernames
-tweets_text <- readRDS('tweets/cairo_tweets.rds')
-cairo_user <- unique(tweets_text$username)
+all_user <- readRDS('tweets/tunis_users.rds')$username
+all_user <- all_user[which(all_user=='adelseeklove1'):length(all_user)]
+#all_user <- unique(tweets_text$username)
 
 # City to process 
-city <- 'Cairo'
+city <- 'Tunis'
 
 # Need to make an RSQLite to store the data locally
  
 sink('tweets_download_log.txt',append=TRUE)
 time1 <- Sys.time()
-out_list <- lapply(cairo_user,all_time,token=twitter_tokens,these_users=cairo_user,city=city,
+out_list <- lapply(all_user,all_time,token=twitter_tokens,these_users=all_user,city=city,
                    sql_db=paste0(city,'.sqlite'),end_date='2011-04-01')
 time2 <- Sys.time()
+difftime(time2,time1)
+print(out_list)
 sink()
 
 
 #Check and make sure that the tweets are loaded correctly
-
-mydb <- dbConnect(RSQLite::SQLite(),paste0(city,'.sqlite'))
+table_name <- paste0(city,'.sqlite')
+mydb <- dbConnect(RSQLite::SQLite(),table_name)
 dbListTables(mydb)
-dbListFields(mydb,'Cairo_tweets')
-check_table <- DBI::dbGetQuery(mydb,'SELECT * from Cairo_tweets')
+dbListFields(mydb,paste0(city,'_tweets'))
+check_table <- DBI::dbGetQuery(mydb,paste0('SELECT DISTINCT screen_name FROM ',paste0(city,'_tweets'),' ;'))
+sum(check_table$screen_name %in% all_user)
 
-
-
-
-
+unique_tweets <- DBI::dbGetQuery(mydb,paste0('SELECT screen_name,count(*) from ', paste0(city,'_tweets'), ' GROUP BY screen_name;'))
+summary(unique_tweets$`count(*)`)
+hist(unique_tweets$`count(*)`)
 

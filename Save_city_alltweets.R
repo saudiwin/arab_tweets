@@ -14,7 +14,7 @@ conn <- dbConnect(dbDriver('PostgreSQL'),dbname='alltweets',
 
 # This will pull just user IDs
 
-users_only <- dbGetQuery(conn, "SELECT DISTINCT username FROM users WHERE location SIMILAR to '%(C|c)airo%';")
+users_only <- dbGetQuery(conn, "SELECT DISTINCT username FROM users WHERE location SIMILAR to '%(T|t)unis%';")
 
-saveRDS(object = users_only,'tweets/cairo_users.rds')
+saveRDS(object = users_only,'tweets/tunis_users.rds')
 
