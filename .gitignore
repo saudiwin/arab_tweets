@@ -4,3 +4,5 @@
 .Ruserdata
 tweets
 .httr-oauth
+.sqlite
+.rds
