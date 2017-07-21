@@ -34,15 +34,33 @@ twitter_tokens <- list(
                  consumer_secret = "NijPrXjKyrzpAWZbrSB6gPXoZLK7Ot0evrSSxFehvrNnuWMuqO")
   )
                        
-
-
-# Get unique Cairo usernames
-all_user <- readRDS('tweets/tunis_users.rds')$username
-all_user <- all_user[which(all_user=='adelseeklove1'):length(all_user)]
-#all_user <- unique(tweets_text$username)
-
-# City to process 
-city <- 'Tunis'
+# set dates
+begin_date <- mdy_hms('07-10-2017 00:00:00')
+end_date <- mdy_hms('07-20-2013 00:00:00')
+all_days <- as.numeric(end_date - begin_date)
+current_day <- 1
+while(current_day<all_days) {
+  first_day <- begin_date + ddays(current_day-1)
+  second_day <- begin_date + ddays(current_day+1)
+  # pull all tweets from tweet file matching those days 
+  
+  these_tweets <- filter(combined,created_at>first_day,
+                         created_at<second_day)
+  
+  # for each tweet, get all retweets 
+  
+  all_rts <- lapply(these_tweets$status_id,
+                    all_time_rts,
+                    token=twitter_tokens)
+  
+  
+  current_day <- current_day + 2
+}
+# Get all elites
+elites <- read_csv('data/egypt_and_tunis_to_gnip.csv.csv') %>% 
+  filter(`Keep?`=='Yes' | is.na(`Keep?`))
+#create data set of dates, users and tweets
+#elites_data <- 
 
 # Need to make an RSQLite to store the data locally
  

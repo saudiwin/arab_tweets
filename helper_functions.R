@@ -71,8 +71,133 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=NULL) {
+all_time_rts <- function(this_tweet=NULL,
+                         token) {
   browser()
+  num_tokens <- length(token)
+  # Start with first token, then move on until all tokens have been exhausted
+  current_token <- 1
+  
+  reset <- 15
+  current_rate <- 100
+
+  test_d <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+  
+  if(class(test_d)=='try-error') {
+    if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+      if(num_tokens>1) {
+        if(current_token<num_tokens) {
+          current_token <- current_token+1
+        } else {
+          current_token <- 1
+        }
+        test_d <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+        if(class(test_d)=='try-error') {
+          if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+            print(paste0('Sleeping for ',reset,' minutes.'))
+            Sys.sleep(reset*60)
+            first_round <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+          } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+            return(paste0(user,' finished without any tweets.'))
+          } else {
+            stop(paste0('Unknown error: ',test_d[1]))
+          }
+        } else {
+          first_round <- test_d
+        }
+      } else {
+        print(paste0('Sleeping for ',reset,' minutes.'))
+        Sys.sleep(reset*60)
+        first_round <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+      }
+    } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+      return(paste0(user,' finished without any re-tweets and a subscript out of bound error on first try. Is this account de-activated?'))
+    } else if(grepl(pattern='curl::curl_fetch_memory',x=test_d[1])) {
+      first_round <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+    } else {
+        return(paste0(user,' finished without any tweets and an unknown error: ',test_d[1]))
+    }
+  } else {
+    #If no error, proceed as normal and see if there are any more tweets to download
+    first_round <- test_d
+  }
+  
+  if(nrow(first_round)==0 || all(is.na(first_round$created_at))) {
+    return(paste0(user,' finished without any tweets.'))
+  }
+  
+  maxid <- first_round$status_id[nrow(first_round)]
+  iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
+  iter <- iter - 1
+  maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
+  user_data <- attr(first_round,'users')
+  
+  
+  #Loop over tweets until we reach the date that our GNIP data begins
+  while(sum(first_round$created_at<end_date)<1) {
+
+    test_d <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+    if(class(test_d)=='try-error') {
+      if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+        if(num_tokens>1) {
+          if(current_token<num_tokens) {
+            current_token <- current_token+1
+          } else {
+            current_token <- 1
+          }
+          test_d <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+          if(class(test_d)=='try-error') {
+            if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
+              print(paste0('Sleeping for ',reset,' minutes.'))
+              Sys.sleep(reset*60)
+              second_round <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+            } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+              save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
+              return(paste0(user,' finished successfully.'))
+            } else {
+              
+              stop(paste0('Unknown error on user ',user,': ',test_d[1]))
+            }
+          } else {
+            second_round <- test_d
+          }
+        } else {
+        print(paste0('Sleeping for ',reset,' minutes.'))
+        # System sleep in seconds using reset minutes
+        Sys.sleep(reset*60)
+        second_round <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+        }
+      } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
+        save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
+        return(paste0(user,' finished successfully.'))
+      } else if(grepl(pattern='curl::curl_fetch_memory',x=test_d[1])) {
+        second_round <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+      } else {
+        stop(paste0('Unknown error on user ',user,': ',test_d[1]))
+      }
+    } else {
+      second_round <- test_d
+    }
+    
+    if(is.data.frame(second_round)) {
+    first_round <- bind_rows(first_round,second_round)
+    maxid <- first_round$status_id[nrow(first_round)]
+    iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
+    iter <- iter - 1
+    maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
+    print(paste0("     Now on tweet created at ",first_round$created_at[nrow(first_round)],
+                 ' and tweet ID of ',first_round$status_id[nrow(first_round)]))
+    } else {
+      # If somehow it didn't work, just write out the tweets already downloaded
+      break
+    } 
+  }
+  
+  return(paste0(user,' finished successfully.'))
+}
+
+all_time <- function(user,token,these_tweets=NULL,city=NULL,sql_db=NULL,day_length=NULL) {
+
   num_tokens <- length(token)
   # Start with first token, then move on until all tokens have been exhausted
   current_token <- 1
@@ -81,7 +206,7 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
   
   reset <- 15
   current_rate <- 1000
-
+  
   test_d <- try(get_timeline(user=user,n=current_rate,token=token[[current_token]]))
   
   if(class(test_d)=='try-error') {
@@ -116,7 +241,7 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
     } else if(grepl(pattern='curl::curl_fetch_memory',x=test_d[1])) {
       first_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
     } else {
-        return(paste0(user,' finished without any tweets and an unknown error: ',test_d[1]))
+      return(paste0(user,' finished without any tweets and an unknown error: ',test_d[1]))
     }
   } else {
     #If no error, proceed as normal and see if there are any more tweets to download
@@ -136,7 +261,7 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
   
   #Loop over tweets until we reach the date that our GNIP data begins
   while(sum(first_round$created_at<end_date)<1) {
-
+    
     test_d <- try(get_timeline(user,n=current_rate,max_id=maxid,token=token[[current_token]]))
     if(class(test_d)=='try-error') {
       if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {
@@ -163,10 +288,10 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
             second_round <- test_d
           }
         } else {
-        print(paste0('Sleeping for ',reset,' minutes.'))
-        # System sleep in seconds using reset minutes
-        Sys.sleep(reset*60)
-        second_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
+          print(paste0('Sleeping for ',reset,' minutes.'))
+          # System sleep in seconds using reset minutes
+          Sys.sleep(reset*60)
+          second_round <- get_timeline(user,n=current_rate,token=token[[current_token]])
         }
       } else if(grepl(pattern = 'subscript out of bounds',x=test_d[1])) {
         save_sqlite(dataset=first_round,city=city,sql_db = sql_db,user_attributes = user_data)
@@ -181,13 +306,13 @@ all_time <- function(user,token,these_users=NULL,city=NULL,sql_db=NULL,end_date=
     }
     
     if(is.data.frame(second_round)) {
-    first_round <- bind_rows(first_round,second_round)
-    maxid <- first_round$status_id[nrow(first_round)]
-    iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
-    iter <- iter - 1
-    maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
-    print(paste0("     Now on tweet created at ",first_round$created_at[nrow(first_round)],
-                 ' and tweet ID of ',first_round$status_id[nrow(first_round)]))
+      first_round <- bind_rows(first_round,second_round)
+      maxid <- first_round$status_id[nrow(first_round)]
+      iter <- as.numeric(substr(maxid,start = nchar(maxid)-8,stop=nchar(maxid))) 
+      iter <- iter - 1
+      maxid <- paste0(substr(maxid,start=1,stop=nchar(maxid)-9),as.character(iter))
+      print(paste0("     Now on tweet created at ",first_round$created_at[nrow(first_round)],
+                   ' and tweet ID of ',first_round$status_id[nrow(first_round)]))
     } else {
       # If somehow it didn't work, just write out the tweets already downloaded
       break
