@@ -6,7 +6,8 @@ require(tidyr)
 require(readr)
 
 
-elites <- read_csv('data/cairo_elites_all.csv')
+elites <- read_csv('data/egypt_and_tunis_to_gnip.csv.csv') %>% 
+  filter(`Keep?`=='Yes' | is.na(`Keep?`))
 
 to_gnip <- select(elites,just_unique) %>% 
   rename(from='just_unique') %>% 
@@ -16,7 +17,7 @@ over_rows <- rep(1:3,each=ceiling(nrow(to_gnip)/3))[1:nrow(to_gnip)]
 for(i in 1:5) {
   this_gnip <- filter(elites,over_rows==i)
   cat(paste0('from: ',
-             paste0(this_gnip$just_unique,collapse = ' OR ')),
+             paste0(this_gnip$just_unique,collapse = ' OR from: ')),
       file=paste0('data/to_gnip_from_',i,'.txt'),
       append=F)
 }
