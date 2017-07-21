@@ -6,7 +6,8 @@ require(tidyr)
 require(readr)
 
 
-elites <- read_csv('data/cairo_elites_all.csv')
+elites <- read_csv('data/egypt_and_tunis_to_gnip.csv.csv') %>% 
+  filter(`Keep?`=='Yes' | is.na(`Keep?`))
 
 to_gnip <- select(elites,just_unique) %>% 
   rename(from='just_unique') %>% 
