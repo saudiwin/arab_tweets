@@ -71,17 +71,30 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-all_time_rts <- function(this_tweet=NULL,
-                         token) {
-  browser()
+all_time_rts <- function(this_time=NULL,
+                         token=NULL,
+                         dataset=NULL,
+                         city=NULL,
+                         sql_db=NULL) {
+  
+  dataset <- filter(dataset,created_at<this_time)
   num_tokens <- length(token)
   # Start with first token, then move on until all tokens have been exhausted
   current_token <- 1
   
   reset <- 15
   current_rate <- 100
-
-  test_d <- try(statuses_retweets(id=this_tweet,count=current_rate,token=token[[current_token]]))
+  out_tweets <- lapply(dataset$status_id,function(t) {
+    
+    test_d <- try(statuses_retweeters(id=t,token=token[[current_token]],cursor = 2))
+    if(length(test_d)==0) {
+      return(NULL)
+    } else {
+      browser()
+      retweeters <- test_d$ids
+    }
+  })
+  
   
   if(class(test_d)=='try-error') {
     if(grepl(pattern = 'rate limit exceeded',x=test_d[1])) {

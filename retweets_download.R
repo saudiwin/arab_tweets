@@ -6,6 +6,7 @@ require(rtweet)
 require(parallel)
 require(RSQLite)
 require(lubridate)
+require(readr)
 
 source('helper_functions.R')
 
@@ -35,39 +36,45 @@ twitter_tokens <- list(
   )
                        
 # set dates
-begin_date <- mdy_hms('07-10-2017 00:00:00')
-end_date <- mdy_hms('07-20-2013 00:00:00')
-all_days <- as.numeric(end_date - begin_date)
-current_day <- 1
-while(current_day<all_days) {
-  first_day <- begin_date + ddays(current_day-1)
-  second_day <- begin_date + ddays(current_day+1)
-  # pull all tweets from tweet file matching those days 
-  
-  these_tweets <- filter(combined,created_at>first_day,
-                         created_at<second_day)
-  
-  # for each tweet, get all retweets 
-  
-  all_rts <- lapply(these_tweets$status_id,
-                    all_time_rts,
-                    token=twitter_tokens)
-  
-  
-  current_day <- current_day + 2
-}
+# begin_date <- mdy_hms('07-10-2017 00:00:00')
+# end_date <- mdy_hms('07-20-2013 00:00:00')
+# all_days <- as.numeric(end_date - begin_date)
+# current_day <- 1
+# while(current_day<all_days) {
+#   first_day <- begin_date + ddays(current_day-1)
+#   second_day <- begin_date + ddays(current_day+1)
+#   # pull all tweets from tweet file matching those days 
+#   
+#   these_tweets <- filter(combined,created_at>first_day,
+#                          created_at<second_day)
+#   
+#   # for each tweet, get all retweets 
+#   
+#   all_rts <- lapply(these_tweets$status_id,
+#                     all_time_rts,
+#                     token=twitter_tokens)
+#   
+#   
+#   current_day <- current_day + 2
+# }
 # Get all elites
-elites <- read_csv('data/egypt_and_tunis_to_gnip.csv.csv') %>% 
-  filter(`Keep?`=='Yes' | is.na(`Keep?`))
+# elites <- read_csv('data/egypt_and_tunis_to_gnip.csv.csv') %>% 
+#   filter(`Keep?`=='Yes' | is.na(`Keep?`))
 #create data set of dates, users and tweets
 #elites_data <- 
+test_tweets <- bind_rows(get_timeline('realdonaldtrump'))
 
 # Need to make an RSQLite to store the data locally
- 
+
+# Need to divide up date range 
+date_range <- seq(from=min(test_tweets$created_at),
+                  to=max(test_tweets$created_at),
+                  length.out=100)
 sink('tweets_download_log.txt',append=TRUE)
 time1 <- Sys.time()
-out_list <- lapply(all_user,all_time,token=twitter_tokens,these_users=all_user,city=city,
-                   sql_db=paste0(city,'.sqlite'),end_date='2011-04-01')
+out_list <- lapply(date_range[-1],all_time_rts,token=twitter_tokens,city=city,
+                   sql_db=paste0(city,'_elite_RTs.sqlite'),
+                   dataset=test_tweets)
 time2 <- Sys.time()
 difftime(time2,time1)
 print(out_list)
