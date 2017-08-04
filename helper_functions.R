@@ -80,13 +80,30 @@ all_time_rts <- function(this_time=NULL,
   dataset <- filter(dataset,created_at<this_time)
   num_tokens <- length(token)
   # Start with first token, then move on until all tokens have been exhausted
-  current_token <- 1
+  if(is.null(current_token)) {
+    current_token <- 1
+  }
+  
   
   reset <- 15
   current_rate <- 100
   out_tweets <- lapply(dataset$status_id,function(t) {
     
     test_d <- try(statuses_retweeters(id=t,token=token[[current_token]],cursor = 2))
+    
+    if(class(test_d)=='try-error') {
+      current_token <- current_token + 1
+      if(current_token>num_tokens) {
+        print(paste0('Sleeping for ',reset,' minutes.'))
+        Sys.sleep(reset*60)
+        all_time_rts(this_time=this_time,
+                     token=token,
+                     dataset=dataset,
+                     city=city,
+                     sql_db=sql_db)
+      }
+    }
+    
     if(length(test_d)==0) {
       return(NULL)
     } else {

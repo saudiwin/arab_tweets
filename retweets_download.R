@@ -35,34 +35,10 @@ twitter_tokens <- list(
                  consumer_secret = "NijPrXjKyrzpAWZbrSB6gPXoZLK7Ot0evrSSxFehvrNnuWMuqO")
   )
                        
-# set dates
-# begin_date <- mdy_hms('07-10-2017 00:00:00')
-# end_date <- mdy_hms('07-20-2013 00:00:00')
-# all_days <- as.numeric(end_date - begin_date)
-# current_day <- 1
-# while(current_day<all_days) {
-#   first_day <- begin_date + ddays(current_day-1)
-#   second_day <- begin_date + ddays(current_day+1)
-#   # pull all tweets from tweet file matching those days 
-#   
-#   these_tweets <- filter(combined,created_at>first_day,
-#                          created_at<second_day)
-#   
-#   # for each tweet, get all retweets 
-#   
-#   all_rts <- lapply(these_tweets$status_id,
-#                     all_time_rts,
-#                     token=twitter_tokens)
-#   
-#   
-#   current_day <- current_day + 2
-# }
-# Get all elites
-# elites <- read_csv('data/egypt_and_tunis_to_gnip.csv.csv') %>% 
-#   filter(`Keep?`=='Yes' | is.na(`Keep?`))
-#create data set of dates, users and tweets
-#elites_data <- 
-test_tweets <- bind_rows(get_timeline('realdonaldtrump'))
+city <- 'test_city'
+
+test_tweets <- bind_rows(get_timeline('rlmcelreath',n = 1000),
+                         get_timeline('hadleywickham',n = 1000))
 
 # Need to make an RSQLite to store the data locally
 
@@ -82,14 +58,14 @@ sink()
 
 
 #Check and make sure that the tweets are loaded correctly
-table_name <- paste0(city,'.sqlite')
-mydb <- dbConnect(RSQLite::SQLite(),table_name)
-dbListTables(mydb)
-dbListFields(mydb,paste0(city,'_tweets'))
-check_table <- DBI::dbGetQuery(mydb,paste0('SELECT DISTINCT screen_name FROM ',paste0(city,'_tweets'),' ;'))
-sum(check_table$screen_name %in% all_user)
-
-unique_tweets <- DBI::dbGetQuery(mydb,paste0('SELECT screen_name,count(*) from ', paste0(city,'_tweets'), ' GROUP BY screen_name;'))
-summary(unique_tweets$`count(*)`)
-hist(unique_tweets$`count(*)`)
+# table_name <- paste0(city,'.sqlite')
+# mydb <- dbConnect(RSQLite::SQLite(),table_name)
+# dbListTables(mydb)
+# dbListFields(mydb,paste0(city,'_tweets'))
+# check_table <- DBI::dbGetQuery(mydb,paste0('SELECT DISTINCT screen_name FROM ',paste0(city,'_tweets'),' ;'))
+# sum(check_table$screen_name %in% all_user)
+# 
+# unique_tweets <- DBI::dbGetQuery(mydb,paste0('SELECT screen_name,count(*) from ', paste0(city,'_tweets'), ' GROUP BY screen_name;'))
+# summary(unique_tweets$`count(*)`)
+# hist(unique_tweets$`count(*)`)
 
