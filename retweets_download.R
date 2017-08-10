@@ -7,8 +7,9 @@ require(parallel)
 require(RSQLite)
 require(lubridate)
 require(readr)
+require(purrr)
 
-source('helper_functions.R')
+source('helper_functions_v2.R')
 
 
 twitter_tokens <- list(
@@ -27,36 +28,57 @@ twitter_tokens <- list(
     create_token(app = "For Analysis IV", # whatever you named app
                  consumer_key = "Q0zOsWNjncK677fkErC9u9FGn",
                  consumer_secret = "gCA883t0Vbk8MfQw5by0odHtE7BXrlikA4G0o1oHcSoDK2F2R4"),
-    create_token(app = "For Analysis IV", # whatever you named app
+    create_token(app = "For Analysis V", # whatever you named app
                  consumer_key = "xg9aQq4VXRaRynmThU86pjyv5",
                  consumer_secret = "GI96VKrSqGdX92TB1SwwZiobo6z55gD1hjCbUDcPDvpEpWxqHw"),
     create_token(app = "For Analysis VIII", # whatever you named app
                  consumer_key = "NKcT4JwM45bkXdPb09jyWui2B",
-                 consumer_secret = "NijPrXjKyrzpAWZbrSB6gPXoZLK7Ot0evrSSxFehvrNnuWMuqO")
-  )
+                 consumer_secret = "NijPrXjKyrzpAWZbrSB6gPXoZLK7Ot0evrSSxFehvrNnuWMuqO"),
+    create_token(app='Writing Research',
+                 consumer_key='EpmJwxlPB0SZx6PdfbLQE7dE3',
+                 consumer_secret='aVCHV6475w8P5UMEnD9wQgucIzmYglaIZGWyuNhVhneOJ5SFub'),
+    create_token(app='Writing Research II',
+                 consumer_key='YNUlurUJ9PdUZXSwUk952G7qm',
+                 consumer_secret='G0qmgjHhbPNFoFUehooEnJfjeWfoBWQmesfceMBBS5NJB893XW'),
+    create_token(app='Writing Research III',
+                 consumer_key='L7ueMAaP4jmjM6m7LymxqZVug',
+                 consumer_secret='TjhWmKO08clOvfEgDQHbBjObXZi3FmOIOWkBUunorx634zOyZx'),
+    create_token(app='Writing Research IV',
+                 consumer_key='kWWxzl5v7Itt7FZoqqlOhyMPY',
+                 consumer_secret='YNKiGDMB72xhl8mFhbnDe4dEDIoIdHiB4BCnGYYEFAUcOy8CCM'),
+    create_token(app='Writing Research V',
+                 consumer_key='OIOvuI5XgFyojoxcWeIheoDWG',
+                 consumer_secret='kJ0mxFHXbXd7QThkos9Mp8ggLg9VeT5xrdm02gaMvmEVFfADbF'),
+    create_token(app='Writing Research VI',
+                 consumer_key='oLCG8qcoWWOqh1qoWD2R9X5C2',
+                 consumer_secret='UlZ8YyXx2WnhDpyL66Ad4ds3JrKo3vvsYI4dVmiEi8Bsp79oIR'))
                        
 city <- 'test_city'
 
-test_tweets <- bind_rows(get_timeline('rlmcelreath',n = 1000),
-                         get_timeline('hadleywickham',n = 1000))
+test_tweets <- bind_rows(get_timeline('yusraghkh',n = 250),
+                         get_timeline('R_Ghannouchi',n = 250))
+test_tweets <- filter(test_tweets,!grepl('\\bRT @',text))
 
 # Need to make an RSQLite to store the data locally
 
 # Need to divide up date range 
 date_range <- seq(from=min(test_tweets$created_at),
                   to=max(test_tweets$created_at),
-                  length.out=100)
-sink('tweets_download_log.txt',append=TRUE)
+                  length.out=10)
+
 time1 <- Sys.time()
-out_list <- lapply(date_range[-1],all_time_rts,token=twitter_tokens,city=city,
+if(file.exists(paste0(city,'_elite_RTs.sqlite'))) {
+  file.remove(paste0(city,'_elite_RTs.sqlite'))
+}
+out_list <- walk2(date_range[-1],date_range[-length(date_range)],all_time_rts,token=twitter_tokens,city=city,
                    sql_db=paste0(city,'_elite_RTs.sqlite'),
                    dataset=test_tweets)
 time2 <- Sys.time()
-difftime(time2,time1)
+
 print(out_list)
-sink()
 
-
+mydb <- dbConnect(SQLite(),paste0(city,'_elite_RTs.sqlite'))
+check_t <- dbReadTable(mydb,'unique_rts')
 #Check and make sure that the tweets are loaded correctly
 # table_name <- paste0(city,'.sqlite')
 # mydb <- dbConnect(RSQLite::SQLite(),table_name)

@@ -72,19 +72,32 @@ Mode <- function(x) {
 }
 
 all_time_rts <- function(this_time=NULL,
+                         last_time=NULL,
                          token=NULL,
                          dataset=NULL,
                          city=NULL,
                          sql_db=NULL) {
   
-  dataset <- filter(dataset,created_at<this_time)
+
+    out_table <- RSQLite::dbConnect(SQLite(),
+                       dbname=sql_db)
 
   
-  
+  dataset <- filter(dataset,
+                    created_at<this_time,
+                    created_at>last_time)
+
+  if(nrow(dataset)==0) {
+    return(NULL)
+  }
+  cat(paste0('\nNow processing last time ',last_time),file='output.txt',append=T)
   reset <- 15
   current_rate <- 100
+  current_token <- new.env()
+  current_token$id <- 1
   out_tweets <- lapply(dataset$status_id,get_tweets,
-                       token=token)
+                       token=token,
+                       current_token=current_token)
     
   names(out_tweets) <- dataset$screen_name
   out_tweets <- out_tweets[sapply(out_tweets,function(l) length(l)>0)]
@@ -95,9 +108,16 @@ all_time_rts <- function(this_time=NULL,
     data_frame(username=n,
                rt_ids=unique_tweets)
   }) %>% bind_rows
-
-  return(out_tweets)
   
+  if(nrow(tweet_list)>0) {
+    uniq_twts <- group_by(tweet_list,username,rt_ids) %>% 
+      count() %>% 
+      mutate(this_time=this_time,
+             last_time=last_time)
+    dbWriteTable(out_table,name = 'unique_rts',value=uniq_twts,append=T)
+    dbDisconnect(out_table)
+  }
+
 }
 
 get_tweets <- function(t=NULL,
@@ -105,22 +125,20 @@ get_tweets <- function(t=NULL,
                        current_token=NULL) {
 
   num_tokens <- length(token)
+
+  # wait five seconds between each run
+  Sys.sleep(0.1)
+  test_d <- try(statuses_retweeters(id=t,token=token[[current_token$id]]))
   
-  # Start with first token, then move on until all tokens have been exhausted
-  if(is.null(current_token)) {
-    current_token <- 1
-  }
-  
-  test_d <- try(statuses_retweeters(id=t,token=token[[current_token]]))
-  
-  if(class(test_d)=='try-error') {
-    browser()
-    current_token <- current_token + 1
-    if(current_token>num_tokens) {
-      print(paste0('Sleeping for ',reset,' minutes.'))
-      Sys.sleep(reset*60)
+  if(class(test_d)=='try-error' || is.null(test_d)) {
+
+    current_token$id <- current_token$id + 1
+    if(current_token$id>num_tokens) {
+      cat(paste0('\nSleeping for ',10,' minutes.'),file='output.txt',append=T)
+      Sys.sleep(10*60)
       get_tweets(t=t,
-                 token=token)
+                 token=token,
+                 current_token=current_token)
     } else {
       get_tweets(t=t,
                  token=token,
@@ -128,8 +146,8 @@ get_tweets <- function(t=NULL,
     }
   }
   
-  if(length(test_d)==0) {
-    return(NULL)
+  if(length(test_d)==0 | length(test_d$ids==0)) {
+    return(test_d)
   } else {
     retweeters <- test_d$ids
     return(retweeters)
