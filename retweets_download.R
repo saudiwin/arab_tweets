@@ -55,8 +55,7 @@ twitter_tokens <- list(
                        
 city <- 'test_city'
 
-test_tweets <- bind_rows(get_timeline('yusraghkh',n = 250),
-                         get_timeline('R_Ghannouchi',n = 250))
+test_tweets <- readRDS('tweets/test_tweets.rds')
 test_tweets <- filter(test_tweets,!grepl('\\bRT @',text))
 
 # Need to make an RSQLite to store the data locally
@@ -64,7 +63,7 @@ test_tweets <- filter(test_tweets,!grepl('\\bRT @',text))
 # Need to divide up date range 
 date_range <- seq(from=min(test_tweets$created_at),
                   to=max(test_tweets$created_at),
-                  length.out=10)
+                  length.out=5)
 
 time1 <- Sys.time()
 if(file.exists(paste0(city,'_elite_RTs.sqlite'))) {
@@ -79,6 +78,7 @@ print(out_list)
 
 mydb <- dbConnect(SQLite(),paste0(city,'_elite_RTs.sqlite'))
 check_t <- dbReadTable(mydb,'unique_rts')
+dbDisconnect(mydb)
 #Check and make sure that the tweets are loaded correctly
 # table_name <- paste0(city,'.sqlite')
 # mydb <- dbConnect(RSQLite::SQLite(),table_name)
