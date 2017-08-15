@@ -38,8 +38,3 @@ tunisia <- lapply(all_files,function(f) {
                   gnip.urls.0.expanded_url)
   return(data1)
 }) %>% bind_rows
-
-just_tunis <- filter(tunisia,)
-
-dbDisconnect(tunis_sql)
-dbDisconnect(egypt_sql)

@@ -15,38 +15,33 @@ wrapper_func <- function(x,tokens=NULL,all_users=NULL,breaks=NULL,city=NULL,
   return(out_list)
 }
 
-all_time_rts <- function(this_time=NULL,
-                         last_time=NULL,
+all_time_rts <- function(today=NULL,
                          token=NULL,
                          dataset=NULL,
                          city=NULL,
                          sql_db=NULL) {
-  
-
-    out_table <- RSQLite::dbConnect(SQLite(),
-                       dbname=sql_db)
 
   
-  dataset <- filter(dataset,
-                    created_at<this_time,
-                    created_at>last_time)
+  
+  
+  dataset <- filter(dataset,days==today)
 
   if(nrow(dataset)==0) {
     return(NULL)
   }
-  cat(paste0('\nNow processing last time ',last_time),file='output.txt',append=T)
+  cat(paste0('\nNow processing day ',today),file='output.txt',append=T)
   reset <- 15
   current_rate <- 100
   current_token <- new.env()
   current_token$id <- 1
   re_run <- new.env()
   re_run$state <- 0
-  out_tweets <- lapply(dataset$status_id,get_tweets,
+  out_tweets <- lapply(dataset$t_id,get_tweets,
                        token=token,
                        current_token=current_token,
                        re_run=re_run)
 
-  names(out_tweets) <- dataset$screen_name
+  names(out_tweets) <- dataset$actor.preferredUsername
   out_tweets <- out_tweets[sapply(out_tweets,function(l) length(l)>0)]
   # combine tweets into unique lists
   tweet_list <- lapply(unique(names(out_tweets)),function(n) {
@@ -55,16 +50,17 @@ all_time_rts <- function(this_time=NULL,
     data_frame(username=n,
                rt_ids=unique_tweets)
   }) %>% bind_rows
+  sql_db <- dbConnect(SQLite(),sql_db)
 
   if(nrow(tweet_list)>0) {
     uniq_twts <- group_by(tweet_list,username,rt_ids) %>% 
       count() %>% 
-      mutate(this_time=as.POSIXct(this_time,origin='1970-01-01 00:00.00 UTC'),
-             last_time=as.POSIXct(last_time,origin='1970-01-01 00:00.00 UTC'))
-    dbWriteTable(out_table,name = 'unique_rts',value=uniq_twts,append=T)
+      mutate(time=today)
+    
+    dbWriteTable(sql_db,name = 'unique_rts',value=uniq_twts,append=T)
     
   }
-  dbDisconnect(out_table)
+  dbDisconnect(sql_db)
 }
 
 get_tweets <- function(t=NULL,
@@ -75,7 +71,7 @@ get_tweets <- function(t=NULL,
   num_tokens <- length(token)
 
   # wait five seconds between each run
-  Sys.sleep(1.5)
+
   test_d <- try(statuses_retweeters(id=t,token=token[[current_token$id]]))
   
   if(class(test_d)=='try-error' || is.null(test_d)) {
@@ -92,14 +88,21 @@ get_tweets <- function(t=NULL,
                    re_run=re_run)
         
       } else {
-        cat(paste0('\nSleeping for ',10,' minutes.'),file='output.txt',append=T)
-        Sys.sleep(10*60)
+        
+        test_d <- try(statuses_retweeters(id=t,token=token[[1]]))
+        
+        if(class(test_d)=='try-error' || is.null(test_d)) {
+          cat(paste0('\nSleeping for ',10,' minutes.'),file='output.txt',append=T)
+          Sys.sleep(10*60)
+          re_run$state <- 0
+          current_token$id <- 1
+          get_tweets(t=t,
+                     token=token,
+                     current_token=current_token,
+                     re_run=re_run)
+        }
         re_run$state <- 0
         current_token$id <- 1
-        get_tweets(t=t,
-                   token=token,
-                   current_token=current_token,
-                   re_run=re_run)
       }
       
     } else {
@@ -113,7 +116,8 @@ get_tweets <- function(t=NULL,
   if(length(test_d)==0 | length(test_d$ids==0)) {
     return(test_d)
   } else {
-    retweeters <- test_d$id
+
+    retweeters <- as.character(test_d$user$id)
     return(retweeters)
   }
 }
