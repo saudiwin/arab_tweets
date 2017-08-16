@@ -6,6 +6,7 @@ require(rtweet)
 require(parallel)
 require(RSQLite)
 require(lubridate)
+require(stringr)
 require(readr)
 require(purrr)
 
@@ -53,32 +54,50 @@ twitter_tokens <- list(
                  consumer_key='oLCG8qcoWWOqh1qoWD2R9X5C2',
                  consumer_secret='UlZ8YyXx2WnhDpyL66Ad4ds3JrKo3vvsYI4dVmiEi8Bsp79oIR'))
                        
-city <- 'test_city'
 
-test_tweets <- bind_rows(get_timeline('yusraghkh',n = 500),
-                         get_timeline('R_Ghannouchi',n = 500))
-test_tweets <- filter(test_tweets,!grepl('\\bRT @',text))
+tunis_sql <- dbConnect(SQLite(),'data/tunis_tweets.sqlite')
+egypt_sql <- dbConnect(SQLite(),'data/egypt_tweets.sqlite')
 
-# Need to make an RSQLite to store the data locally
+country_list <- read_csv('data/Final Coding -- Dana - Sheet1.csv')
 
-# Need to divide up date range 
-date_range <- seq(from=min(test_tweets$created_at),
-                  to=max(test_tweets$created_at),
-                  length.out=10)
+tunisia <- filter(country_list,Country=='Tunisia') %>% pull(Username)
+egypt <- filter(country_list,Country=='Egypt') %>% pull(Username)
+
+all_tunis_rts <- dbReadTable(tunis_sql,'all_retweets')
+all_egypt_rts <- dbReadTable(egypt_sql,'all_retweets')
+
+
+all_tunis_rts <- mutate(all_tunis_rts,
+                        time=ymd_hms(object.postedTime),
+                        days=yday(time),
+                        t_id=str_extract(id,'[0-9]{18}')) %>% 
+  filter(days>88,
+         !grepl(pattern='RT @',x = body))
+all_egypt_rts <- mutate(all_egypt_rts,
+                        time=ymd_hms(object.postedTime),
+                        days=yday(time),
+                        t_id=str_extract(id,'[0-9]{18}')) %>% 
+  filter(days>88,
+         !grepl('RT @',x = body))
+
+dbDisconnect(tunis_sql)
+dbDisconnect(egypt_sql)
 
 time1 <- Sys.time()
-if(file.exists(paste0(city,'_elite_RTs.sqlite'))) {
-  file.remove(paste0(city,'_elite_RTs.sqlite'))
-}
-out_list <- walk2(date_range[-1],date_range[-length(date_range)],all_time_rts,token=twitter_tokens,city=city,
-                   sql_db=paste0(city,'_elite_RTs.sqlite'),
-                   dataset=test_tweets)
+
+walk(min(all_tunis_rts$days):max(all_tunis_rts$days),all_time_rts,token=twitter_tokens,city=city,
+                   sql_db='data/tunis_tweets.sqlite',
+                   dataset=all_tunis_rts)
 time2 <- Sys.time()
 
-print(out_list)
+time3 <- Sys.time()
 
-mydb <- dbConnect(SQLite(),paste0(city,'_elite_RTs.sqlite'))
-check_t <- dbReadTable(mydb,'unique_rts')
+walk(min(all_egypt_rts$days):max(all_egypt_rts$days),all_time_rts,token=twitter_tokens,city=city,
+      sql_db='data/egypt_tweets.sqlite',
+      dataset=all_egypt_rts)
+time4 <- Sys.time()
+
+
 #Check and make sure that the tweets are loaded correctly
 # table_name <- paste0(city,'.sqlite')
 # mydb <- dbConnect(RSQLite::SQLite(),table_name)
