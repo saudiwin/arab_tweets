@@ -55,8 +55,8 @@ twitter_tokens <- list(
                        
 city <- 'test_city'
 
-test_tweets <- bind_rows(get_timeline('yusraghkh',n = 250),
-                         get_timeline('R_Ghannouchi',n = 250))
+test_tweets <- bind_rows(get_timeline('yusraghkh',n = 500),
+                         get_timeline('R_Ghannouchi',n = 500))
 test_tweets <- filter(test_tweets,!grepl('\\bRT @',text))
 
 # Need to make an RSQLite to store the data locally

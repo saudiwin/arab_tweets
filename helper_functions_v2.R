@@ -127,7 +127,7 @@ get_tweets <- function(t=NULL,
   num_tokens <- length(token)
 
   # wait five seconds between each run
-  Sys.sleep(0.1)
+  #Sys.sleep(0.1)
   test_d <- try(statuses_retweeters(id=t,token=token[[current_token$id]]))
   
   if(class(test_d)=='try-error' || is.null(test_d)) {
