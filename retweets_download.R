@@ -89,18 +89,14 @@ walk(min(all_tunis_rts$days):max(all_tunis_rts$days),all_time_rts,token=twitter_
                    dataset=all_tunis_rts)
 time2 <- Sys.time()
 
-time1 <- Sys.time()
+time3 <- Sys.time()
 
 walk(min(all_egypt_rts$days):max(all_egypt_rts$days),all_time_rts,token=twitter_tokens,city=city,
       sql_db='data/egypt_tweets.sqlite',
       dataset=all_egypt_rts)
-time2 <- Sys.time()
+time4 <- Sys.time()
 
-print(out_list)
 
-mydb <- dbConnect(SQLite(),paste0(city,'_elite_RTs.sqlite'))
-check_t <- dbReadTable(mydb,'unique_rts')
-dbDisconnect(mydb)
 #Check and make sure that the tweets are loaded correctly
 # table_name <- paste0(city,'.sqlite')
 # mydb <- dbConnect(RSQLite::SQLite(),table_name)
