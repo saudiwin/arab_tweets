@@ -135,8 +135,7 @@ out_fit <- sampling(code_compile,
                       y=as.integer(gen_out),
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2)),
-                      cores=4,
-                    control=list(adapt_delta=0.95))
+                      cores=4)
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')
 mcmc_trace(to_plot,pars='adj[2]')
