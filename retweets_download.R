@@ -66,6 +66,7 @@ egypt <- filter(country_list,Country=='Egypt') %>% pull(Username)
 all_tunis_rts <- dbReadTable(tunis_sql,'all_retweets')
 all_egypt_rts <- dbReadTable(egypt_sql,'all_retweets')
 
+
 all_tunis_rts <- mutate(all_tunis_rts,
                         time=ymd_hms(object.postedTime),
                         days=yday(time),

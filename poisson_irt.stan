@@ -24,16 +24,17 @@ parameters {
 }
 
 model {
-  alpha[1,1] ~ normal(start_vals[1],0.001);
-  alpha[1,3] ~ normal(start_vals[3],0.001);
-  alpha[1,2] ~ normal(0,1);
-  alpha[1,4] ~ normal(0,1);
+  alpha[1,] ~ normal(start_vals,0.001);
+  //alpha[1,3] ~ normal(start_vals[3],0.001);
+  //alpha[1,2:4] ~ normal(0,1);
+  //alpha[1,4] ~ normal(0,1);
   gamma1 ~ normal(0,5);
   gamma2 ~ normal(0,5);
   adj ~ normal(0,1);
+  mean_delta ~ normal(0,2);
   mean_beta ~ normal(0,5);
-  sigma_beta ~ normal(0,5);
-  sigma_delta ~ normal(0,5);
+  sigma_beta ~ normal(0,2);
+  sigma_delta ~ normal(0,2);
   //pre-coup gammas
 
   alpha[2:(coup-1),1] ~ normal(alpha[1:(coup-2),1] - gamma1[1]*(alpha[1:(coup-2),1] - (adj[2]/adj[1])*alpha[1:(coup-2),2]),.25);
