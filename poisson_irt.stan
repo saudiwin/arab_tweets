@@ -16,8 +16,8 @@ parameters {
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
   vector<lower=0>[4] adj;
-  vector<lower=0,upper=0>[2] gamma1;
-  vector<lower=0,upper=0>[2] gamma2;
+  vector<lower=0,upper=1>[2] gamma1;
+  vector<lower=0,upper=1>[2] gamma2;
   real mean_delta;
   real<lower=0> sigma_beta;
   real<lower=0> sigma_delta;
@@ -50,7 +50,7 @@ model {
         alpha[coup:T,4] ~ normal(alpha[(coup-1):(T-1),4] - gamma2[2]*(alpha[(coup-1):(T-1),4] - (adj[3]/adj[4])*alpha[(coup-1):(T-1),3]),.25);
 
   beta ~ normal(0,sigma_beta);          // informative true prior
-  delta ~ normal(mean_delta,sigma_delta);       // informative true prior
+  delta ~ normal(0,sigma_delta);       // informative true prior
   for(n in 1:N)
     y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }
