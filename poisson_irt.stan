@@ -24,12 +24,12 @@ parameters {
 }
 
 model {
-  alpha[1,] ~ normal(start_vals,0.1);
-  //alpha[1,3] ~ normal(start_vals[3],0.001);
-  alpha[1,2:4] ~ normal(0,5);
-  //alpha[1,4] ~ normal(0,1);
-  gamma1 ~ normal(0,5);
-  gamma2 ~ normal(0,5);
+  alpha[1,1] ~ normal(start_vals[1],0.01);
+  alpha[1,3] ~ normal(start_vals[3],0.01);
+  alpha[1,2] ~ normal(0,5);
+  alpha[1,4] ~ normal(0,5);
+  gamma1 ~ normal(0,2);
+  gamma2 ~ normal(0,2);
   adj ~ normal(0,1);
   mean_delta ~ normal(0,2);
   mean_beta ~ normal(0,5);
@@ -37,21 +37,21 @@ model {
   sigma_delta ~ normal(0,2);
   //pre-coup gammas
 
-  alpha[2:(coup-1),1] ~ normal(alpha[1:(coup-2),1] - gamma1[1]*(alpha[1:(coup-2),1] - adj[1]*alpha[1:(coup-2),2]),.25);
-    alpha[2:(coup-1),2] ~ normal(alpha[1:(coup-2),2] - gamma1[1]*(alpha[1:(coup-2),2] - adj[2]*alpha[1:(coup-2),1]),.25);
-      alpha[2:(coup-1),3] ~ normal(alpha[1:(coup-2),3] - gamma2[1]*(alpha[1:(coup-2),3] - adj[3]*alpha[1:(coup-2),4]),.25);
-        alpha[2:(coup-1),4] ~ normal(alpha[1:(coup-2),4] - gamma2[1]*(alpha[1:(coup-2),4] - adj[4]*alpha[1:(coup-2),3]),.25);
+  alpha[2:(coup-1),1] ~ normal(alpha[1:(coup-2),1] - gamma1[1]*(alpha[1:(coup-2),1] - (adj[2]/adj[1])*alpha[1:(coup-2),2]),.25);
+    alpha[2:(coup-1),2] ~ normal(alpha[1:(coup-2),2] - gamma1[1]*(alpha[1:(coup-2),2] - (adj[1]/adj[2])*alpha[1:(coup-2),1]),.25);
+      alpha[2:(coup-1),3] ~ normal(alpha[1:(coup-2),3] - gamma1[2]*(alpha[1:(coup-2),3] - (adj[4]/adj[3])*alpha[1:(coup-2),4]),.25);
+        alpha[2:(coup-1),4] ~ normal(alpha[1:(coup-2),4] - gamma1[2]*(alpha[1:(coup-2),4] - (adj[3]/adj[4])*alpha[1:(coup-2),3]),.25);
 
   
   //post-coup gammas
   
-    alpha[coup:T,1] ~ normal(alpha[(coup-1):(T-1),1] - gamma1[2]*(alpha[(coup-1):(T-1),1] - adj[1]*alpha[(coup-1):(T-1),2]),.25);
-    alpha[coup:T,2] ~ normal(alpha[(coup-1):(T-1),2] - gamma1[2]*(alpha[(coup-1):(T-1),2] - adj[2]*alpha[(coup-1):(T-1),1]),.25);
-      alpha[coup:T,3] ~ normal(alpha[(coup-1):(T-1),3] - gamma2[2]*(alpha[(coup-1):(T-1),3] - adj[3]*alpha[(coup-1):(T-1),4]),.25);
-        alpha[coup:T,4] ~ normal(alpha[(coup-1):(T-1),4] - gamma2[2]*(alpha[(coup-1):(T-1),4] - adj[4]*alpha[(coup-1):(T-1),3]),.25);
+    alpha[coup:T,1] ~ normal(alpha[(coup-1):(T-1),1] - gamma2[1]*(alpha[(coup-1):(T-1),1] - (adj[2]/adj[1])*alpha[(coup-1):(T-1),2]),.25);
+    alpha[coup:T,2] ~ normal(alpha[(coup-1):(T-1),2] - gamma2[1]*(alpha[(coup-1):(T-1),2] - (adj[1]/adj[2])*alpha[(coup-1):(T-1),1]),.25);
+      alpha[coup:T,3] ~ normal(alpha[(coup-1):(T-1),3] - gamma2[2]*(alpha[(coup-1):(T-1),3] - (adj[4]/adj[3])*alpha[(coup-1):(T-1),4]),.25);
+        alpha[coup:T,4] ~ normal(alpha[(coup-1):(T-1),4] - gamma2[2]*(alpha[(coup-1):(T-1),4] - (adj[3]/adj[4])*alpha[(coup-1):(T-1),3]),.25);
 
   beta ~ normal(0,sigma_beta);          // informative true prior
-  delta ~ normal(0,5);       // informative true prior
+  delta ~ normal(mean_delta,sigma_delta);       // informative true prior
   for(n in 1:N)
     y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }
