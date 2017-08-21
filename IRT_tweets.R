@@ -34,8 +34,8 @@ cit_dis <- rnorm(n=cit)
 
 init_sides1 <- c(1,-1)
 init_sides2 <- c(-1,1)
-adj1 <- c(.3,0.7)
-adj2 <- c(.5,0.8)
+adj1 <- .7
+adj2 <- .3
 
 gamma1 <- 0.1
 gamma2 <- 0.9
@@ -51,11 +51,11 @@ out_vec2 <- sapply(2:t,function(t_1) {
     gamma <- gamma2
   }
     if(t_1==1) {
-      t_11 <- init_sides2[1] - gamma*(init_sides2[1] - (adj2[2]/adj2[1])*init_sides2[2]) + rnorm(1,sd=0.25)
-      t_12 <- init_sides2[2] - gamma*(init_sides2[2]- (adj2[1]/adj2[2])*init_sides2[1]) + rnorm(1,sd=0.25)
+      t_11 <- init_sides2[1] - gamma*(init_sides2[1] - adj1*init_sides2[2]) + rnorm(1,sd=0.25)
+      t_12 <- init_sides2[2] - gamma*(init_sides2[2]- (1/adj1)*init_sides2[1]) + rnorm(1,sd=0.25)
     } else {
-      t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2[2]/adj2[1])*current_val$t2) + rnorm(1,sd=0.25)
-      t_12 <- current_val$t2 - gamma*(current_val$t2- (adj2[1]/adj2[2])*current_val$t1) + rnorm(1,sd=0.25)
+      t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
+      t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj1)*current_val$t1) + rnorm(1,sd=0.25)
     }
     current_val$t1 <- t_11
     current_val$t2 <- t_12
@@ -73,6 +73,10 @@ alpha <- 2.1
 current_val <- new.env()
 current_val$t1 <- 0
 current_val$t2 <- 0
+
+gamma1 <- 0.9
+gamma2 <- 0.1
+
 out_vec1 <- sapply(2:t,function(t_1) {
   if(t_1<(t/2)) {
     gamma <- gamma1
@@ -80,11 +84,11 @@ out_vec1 <- sapply(2:t,function(t_1) {
     gamma <- gamma2
   }
   if(t_1==1) {
-    t_11 <- init_sides2[1] - gamma*(init_sides1[1] - (adj1[2]/adj1[1])*init_sides1[2]) + rnorm(1,sd=0.25)
-    t_12 <- init_sides2[2] - gamma*(init_sides1[2]- (adj1[1]/adj1[2])*init_sides1[1]) + rnorm(1,sd=0.25)
+    t_11 <- init_sides2[1] - gamma*(init_sides1[1] - (adj2)*init_sides1[2]) + rnorm(1,sd=0.25)
+    t_12 <- init_sides2[2] - gamma*(init_sides1[2]- (1/adj2)*init_sides1[1]) + rnorm(1,sd=0.25)
   } else {
-    t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1[2]/adj1[1])*current_val$t2) + rnorm(1,sd=0.25)
-    t_12 <- current_val$t2 - gamma*(current_val$t2- (adj1[1]/adj1[2])*current_val$t1) + rnorm(1,sd=0.25)
+    t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
+    t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj2)*current_val$t1) + rnorm(1,sd=0.25)
   }
   current_val$t1 <- t_11
   current_val$t2 <- t_12
@@ -136,11 +140,10 @@ out_fit <- sampling(code_compile,
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2)),
                       cores=4,
-                    control=list(max_treedepth=15))
+                    control=list(max_treedepth=10))
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')
 mcmc_trace(to_plot,pars='adj[2]')
-mcmc_trace(to_plot,pars='adj[3]')
 adj_est <- as.array(out_fit,'adj')
 mcmc_recover_intervals(x=adj_est,true = c(adj1,adj2))
 mcmc_recover_intervals(x=as.array(out_fit,c('gamma1','gamma2')),true = c(c(gamma1,gamma2),
