@@ -16,27 +16,27 @@ parameters {
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
   vector<lower=0,upper=1>[2] adj;
-  vector<lower=0>[4] ts_sigma;
-  vector<lower=0>[2] gamma1;
-  vector<lower=0>[2] gamma2;
+  // vector<lower=0>[4] ts_sigma;
+  vector<lower=0,upper=1>[2] gamma1;
+  vector<lower=0,upper=1>[2] gamma2;
   real mean_delta;
   real<lower=0> sigma_beta;
   real<lower=0> sigma_delta;
 }
 
 model {
-  alpha[1,] ~ normal(start_vals,0.01);
+  alpha[1,] ~ normal(start_vals,0.001);
   // alpha[1,3] ~ normal(start_vals[3],.01);
   // alpha[1,2] ~ normal(0,1);
   // alpha[1,4] ~ normal(0,1);
-  gamma1 ~ exponential(5);
-  gamma2 ~ exponential(5);
-  ts_sigma ~ normal(-0.5,1);
-  adj ~ exponential(2);
+  gamma1 ~ normal(0,3);
+  gamma2 ~ normal(0,3);
+  // ts_sigma ~ normal(-0.5,1);
+  adj ~ normal(0,3);
   mean_delta ~ normal(0,2);
   mean_beta ~ normal(0,2);
   sigma_beta ~ exponential(1);
-  sigma_delta ~ exponential (1);
+  sigma_delta ~ exponential(1);
   //pre-coup gammas
 
   alpha[2:(coup-1),1] ~ normal(alpha[1:(coup-2),1] - gamma1[1]*(alpha[1:(coup-2),1] - (adj[1])*alpha[1:(coup-2),2]),
@@ -60,8 +60,8 @@ model {
   alpha[coup:T,4] ~ normal(alpha[(coup-1):(T-1),4] - gamma2[2]*(alpha[(coup-1):(T-1),4] - (1/adj[2])*alpha[(coup-1):(T-1),3]),
         .25);
 
-  beta ~ normal(0,3);          // informative true prior
-  delta ~ normal(0,3);       // informative true prior
+  beta ~ normal(0,2);          
+  delta ~ normal(0,2);       
   for(n in 1:N)
     y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }

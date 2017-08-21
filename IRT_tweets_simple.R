@@ -51,8 +51,8 @@ out_vec2 <- sapply(2:t,function(t_1) {
     gamma <- gamma2
   }
     if(t_1==1) {
-      t_11 <- init_sides2[1]
-      t_12 <- init_sides2[2]
+      t_11 <- init_sides2[1] - gamma*(init_sides2[1] - adj1*init_sides2[2]) + rnorm(1,sd=0.25)
+      t_12 <- init_sides2[2] - gamma*(init_sides2[2]- (1/adj1)*init_sides2[1]) + rnorm(1,sd=0.25)
     } else {
       t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
       t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj1)*current_val$t1) + rnorm(1,sd=0.25)
@@ -84,8 +84,8 @@ out_vec1 <- sapply(2:t,function(t_1) {
     gamma <- gamma2
   }
   if(t_1==1) {
-    t_11 <- init_sides1[1]
-    t_12 <- init_sides1[2]
+    t_11 <- init_sides2[1]
+    t_12 <- init_sides2[2]
   } else {
     t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
     t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj2)*current_val$t1) + rnorm(1,sd=0.25)
@@ -132,23 +132,6 @@ code_compile <- stan_model(file='poisson_irt.stan')
 
 time_gamma <- c(rep(0L,(t/2)-1),rep(1L,t-2))
 
-#function to create starting values
-
-start_func <- function() {
-  list(alpha=rbind(matrix(c(init_sides1,init_sides2),ncol=4),
-                   matrix(rnorm(n = 99*4),ncol=4)),
-       gamma1=c(0.5,0.5),
-       gamma2=c(0.5,0.5),
-       ts_sigma=rep(0.25,4),
-       adj=c(0.5,0.5),
-       mean_delta=0,
-       mean_beta=0,
-       sigma_beta=1,
-       sigma_delta=1,
-       beta=rnorm(n=100),
-       delta=rnorm(100))
-}
-
 out_fit <- sampling(code_compile,
                     data=list(J=sides,
                               K=cit,
@@ -162,8 +145,7 @@ out_fit <- sampling(code_compile,
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
                       cores=4,
-                    control=list(max_treedepth=10),
-                    init=start_func)
+                    control=list(max_treedepth=10))
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')
 mcmc_trace(to_plot,pars='adj[2]')
