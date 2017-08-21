@@ -84,7 +84,7 @@ dbDisconnect(egypt_sql)
 
 time1 <- Sys.time()
 
-walk(min(all_tunis_rts$days):max(all_tunis_rts$days),all_time_rts,token=twitter_tokens,city=city,
+walk(329:max(all_tunis_rts$days),all_time_rts,token=twitter_tokens,city=city,
                    sql_db='data/tunis_tweets.sqlite',
                    dataset=all_tunis_rts)
 time2 <- Sys.time()
