@@ -162,7 +162,8 @@ out_fit <- sampling(code_compile,
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
                       cores=4,
-                    control=list(max_treedepth=10),
+                    control=list(max_treedepth=10,
+                                 adapt_delta=0.95),
                     init=start_func)
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')

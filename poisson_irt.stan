@@ -33,14 +33,12 @@ parameters {
 }
 
 model {
-  alpha[1,] ~ normal(start_vals[1],0.001);
-  alpha[1,3] ~ normal(start_vals[1],.001);
-  alpha[1,2] ~ normal(0,1);
-  alpha[1,4] ~ normal(0,1);
+  alpha[1,] ~ normal(start_vals,0.001);
+
   gamma1 ~ normal(0,3);
   gamma2 ~ normal(0,3);
   // ts_sigma ~ normal(-0.5,1);
-  adj ~ normal(1,.25);
+  adj ~ normal(1,.1);
   mean_delta ~ normal(0,2);
   mean_beta ~ normal(0,2);
   sigma_beta ~ exponential(1);
