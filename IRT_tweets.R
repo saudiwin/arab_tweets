@@ -34,8 +34,8 @@ cit_dis <- rnorm(n=cit)
 
 init_sides1 <- c(1,-1)
 init_sides2 <- c(-1,1)
-adj1 <- .7
-adj2 <- .3
+adj1 <- .9
+adj2 <- 1.1
 
 gamma1 <- 0.1
 gamma2 <- 0.9
@@ -136,11 +136,11 @@ time_gamma <- c(rep(0L,(t/2)-1),rep(1L,t-2))
 
 start_func <- function() {
   list(alpha=rbind(matrix(c(init_sides1,init_sides2),ncol=4),
-                   matrix(rnorm(n = 99*4),ncol=4)),
+                   matrix(rep(0, 99*4),ncol=4)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
-       adj=c(0.5,0.5),
+       adj=c(1,1),
        mean_delta=0,
        mean_beta=0,
        sigma_beta=1,

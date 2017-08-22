@@ -11,17 +11,19 @@ data {
   int coup; // when the coup happens
 }
 transformed data {
+  /*
   vector[2] adj;
   
   adj[1] = 0.3;
   adj[2] = 0.7;
+  */
 }
 parameters {    
   vector[K] delta;                  // discriminations
   real mean_beta;     //mean citizen response
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
-  //vector[2] adj;
+  vector[2] adj;
   // vector<lower=0>[4] ts_sigma;
   vector<lower=0,upper=1>[2] gamma1;
   vector<lower=0,upper=1>[2] gamma2;
@@ -31,14 +33,14 @@ parameters {
 }
 
 model {
-  alpha[1,1] ~ normal(start_vals[1],0.001);
-  alpha[1,3] ~ normal(0,1);
+  alpha[1,] ~ normal(start_vals[1],0.001);
+  alpha[1,3] ~ normal(start_vals[1],.001);
   alpha[1,2] ~ normal(0,1);
   alpha[1,4] ~ normal(0,1);
   gamma1 ~ normal(0,3);
   gamma2 ~ normal(0,3);
   // ts_sigma ~ normal(-0.5,1);
-  //adj ~ normal(0.5,.25);
+  adj ~ normal(1,.25);
   mean_delta ~ normal(0,2);
   mean_beta ~ normal(0,2);
   sigma_beta ~ exponential(1);
@@ -66,8 +68,8 @@ model {
   alpha[coup:T,4] ~ normal(alpha[(coup-1):(T-1),4] - gamma2[2]*(alpha[(coup-1):(T-1),4] - (1/adj[2])*alpha[(coup-1):(T-1),3]),
         .25);
 
-  beta ~ normal(0,2);          
-  delta ~ normal(0,2);       
+  beta ~ normal(0,sigma_beta);          
+  delta ~ normal(mean_delta,sigma_delta);       
   for(n in 1:N)
     y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }
