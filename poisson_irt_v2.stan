@@ -25,10 +25,10 @@ transformed data {
   
 }
 parameters {    
-  vector[K] delta;                  // discriminations
+  vector[K-2] delta_free;                  // discriminations
   //real mean_beta;     //mean citizen response
   matrix[T,J] alpha;               // ability of student j - mean ability
-  vector[K-1] beta_free;                // difficulty of question k
+  vector[K] beta;                // difficulty of question k
   vector[2] adj;
   // vector<lower=0>[4] ts_sigma;
   vector<lower=0,upper=1>[2] gamma1;
@@ -38,26 +38,32 @@ parameters {
   //real gamma_par2;
   real<lower=0> sigma_beta;
   real<lower=0> sigma_delta;
+  vector<upper=0>[2] delta_con_low;
+  vector<lower=0>[2] delta_con_high;
 }
 
 transformed parameters {
-  vector[K] beta;
-  
-  beta = append_row(-sum(beta_free),beta_free);
+  // vector[K] beta;
+  // 
+  // beta = append_row(-sum(beta_free),beta_free);
+  vector[K] delta;
+  delta=append_row(delta_con_low,append_row(delta_con_high,delta_free));
 }
 
 model {
   alpha[1,] ~ normal(start_vals,0.001);
   //gamma_par1 ~ normal(0,2);
   //gamma_par2 ~ normal(0,2);
-  gamma1 ~ cauchy(0,1);
-  gamma2 ~ cauchy(0,1);
+  gamma1 ~ normal(0,3);
+  gamma2 ~ normal(0,3);
 
   // ts_sigma ~ normal(-0.5,1);
   adj ~ normal(1,.1);
   mean_delta ~ normal(0,2);
-  sigma_beta ~ exponential(1.5);
-  sigma_delta ~ exponential(1.5);
+  sigma_beta ~ exponential(1);
+  sigma_delta ~ exponential(1);
+  delta_con_low ~ normal(0,2);
+  delta_con_high ~ normal(0,2);
   //pre-coup gammas
 
   alpha[2:T,1] ~ normal(alpha[1:(T-1),1] - gamma1[time_gamma].*(alpha[1:(T-1),1] - (adj[1])*alpha[1:(T-1),2]),
@@ -72,8 +78,8 @@ model {
   
   //post-coup gammas
   
-  beta_free ~ normal(0,2);          
-  delta ~ normal(mean_delta,sigma_delta);       
+  beta ~ normal(0,sigma_beta);          
+  delta_free ~ normal(mean_delta,sigma_delta);       
   for(n in 1:N)
     y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }
