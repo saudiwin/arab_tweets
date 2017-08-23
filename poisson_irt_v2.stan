@@ -54,7 +54,7 @@ model {
   gamma2 ~ cauchy(0,1);
 
   // ts_sigma ~ normal(-0.5,1);
-  adj ~ normal(1,.25);
+  adj ~ normal(1,.1);
   mean_delta ~ normal(0,2);
   sigma_beta ~ exponential(1.5);
   sigma_delta ~ exponential(1.5);
