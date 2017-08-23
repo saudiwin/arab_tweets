@@ -25,7 +25,7 @@ all_time_rts <- function(today=NULL,
   
   
   dataset <- filter(dataset,days==today)
-
+  dataset <- sample_n(dataset,300)
   if(nrow(dataset)==0) {
     return(NULL)
   }
@@ -40,7 +40,6 @@ all_time_rts <- function(today=NULL,
                        token=token,
                        current_token=current_token,
                        re_run=re_run)
-
   names(out_tweets) <- dataset$actor.preferredUsername
   out_tweets <- out_tweets[sapply(out_tweets,function(l) length(l)>0)]
   # combine tweets into unique lists
@@ -113,10 +112,10 @@ get_tweets <- function(t=NULL,
   }
 
   if(length(test_d)==0 | length(test_d$ids)==0) {
-    return(test_d)
+    return(list())
   } else {
 
-    retweeters <- as.character(test_d$user$ids)
+    retweeters <- as.character(test_d$ids)
     return(retweeters)
   }
 }
