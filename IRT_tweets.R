@@ -26,7 +26,7 @@ cit <- 100
 
 # Citizen points
 cit_pt <- rnorm(n=cit-1)
-cit_pt <- c(0,cit_pt)
+cit_pt <- c(-sum(cit_pt),cit_pt)
 # Discrim points
 cit_dis <- rnorm(n=cit)
 
@@ -107,7 +107,8 @@ combine_vec <- cbind(out_vec1,out_vec2)
 elite_ids <- rep(1:sides,times=cit*t)
 time_ids <- rep(1:t,times=cit*sides)
 cit_ids <- rep(1:cit,each=sides*t)
-combine_ids <- unique(cbind(elite_ids,cit_ids,time_ids))
+gamma_ids <- if_else(time_ids<(t/2),0L,1L)
+combine_ids <- unique(cbind(elite_ids,cit_ids,time_ids,gamma_ids))
 
 gen_out <- sapply(1:nrow(combine_ids), function(n) {
   outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - cit_pt[cit_ids[n]]))
@@ -126,11 +127,11 @@ combine_plot <- combine_vec %>% as_data_frame %>%
   scale_colour_brewer(palette='Paired') +
   theme(panel.grid = element_blank())
 
-code_compile <- stan_model(file='poisson_irt.stan')
+code_compile <- stan_model(file='poisson_irt_v2.stan')
 
 # need to create time variable for gamma
 
-time_gamma <- c(rep(0L,(t/2)-1),rep(1L,t-2))
+time_gamma <- c(rep(1L,(t/2)-1),rep(2L,t/2))
 
 #function to create starting values
 
@@ -146,7 +147,9 @@ start_func <- function() {
        sigma_beta=1,
        sigma_delta=1,
        beta=rnorm(n=100),
-       delta=rnorm(100))
+       delta=rnorm(100),
+       gamma_par1=0,
+       gamma_par2=0)
 }
 
 out_fit <- sampling(code_compile,
@@ -162,8 +165,8 @@ out_fit <- sampling(code_compile,
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
                       cores=4,
-                    control=list(max_treedepth=10,
-                                 adapt_delta=0.95),
+                    control=list(max_treedepth=11,
+                                 adapt_delta=0.9),
                     init=start_func)
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')
