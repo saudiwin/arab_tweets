@@ -41,6 +41,10 @@ transformed parameters {
 
 model {
   alpha[1,] ~ normal(start_vals,0.01);
+<<<<<<< HEAD
+=======
+
+>>>>>>> bb698df5fdc7ec5dbf869c63257f0893469a3f49
 
   //gamma_par1 ~ normal(0,2);
   //gamma_par2 ~ normal(0,2);
