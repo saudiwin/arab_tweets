@@ -25,15 +25,16 @@ t <- 100
 cit <- 100
 
 # Citizen points
-cit_pt <- rnorm(n=cit-1)
-cit_pt <- c(-sum(cit_pt),cit_pt)
+cit_pt <- rnorm(n=cit)
+# cit_pt <- c(-sum(cit_pt),cit_pt)
 # Discrim points
 cit_dis <- rnorm(n=cit)
+#cit_dis <- c(-1,1,cit_dis)
 
 # Generate side/elite ideal points
 
-init_sides1 <- c(1,-1)
-init_sides2 <- c(-1,1)
+init_sides1 <- c(1,1)
+init_sides2 <- c(-1,-1)
 adj1 <- .9
 adj2 <- 1.1
 
@@ -44,30 +45,31 @@ alpha <- 2.1
   current_val$t1 <- 0
   current_val$t2 <- 0
   
-out_vec2 <- sapply(2:t,function(t_1) {
-  if(t_1<(t/2)) {
-    gamma <- gamma1
-  } else {
-    gamma <- gamma2
-  }
+  out_vec2 <- lapply(1:t,function(t_1) {
+    
+    if(t_1<(t/2)) {
+      gamma <- gamma1
+    } else {
+      gamma <- gamma2
+    }
     if(t_1==1) {
       t_11 <- init_sides2[1]
       t_12 <- init_sides2[2]
+      return(data_frame(t_11,t_12))
     } else {
       t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
       t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj1)*current_val$t1) + rnorm(1,sd=0.25)
     }
     current_val$t1 <- t_11
     current_val$t2 <- t_12
-    return(c(t_11,t_12))
-  }) %>% t
-out_vec2 <- rbind(matrix(init_sides2,ncol=2),out_vec2)
+    return(data_frame(t_11,t_12))
+  })  %>% bind_rows
 
-out_vec2 %>% as_data_frame %>% 
-  mutate(time=1:t) %>% 
-  gather(series,estimates,-time) %>% 
-  ggplot(aes(y=estimates,x=time,linetype=series)) +geom_path() +theme_minimal() +
-  geom_vline(xintercept=(t/2),linetype=4)
+  out_vec2 %>% 
+    mutate(time=1:t) %>% 
+    gather(series,estimates,-time) %>% 
+    ggplot(aes(y=estimates,x=time,linetype=series)) +geom_path() +theme_minimal() +
+    geom_vline(xintercept=(t/2),linetype=4)
 
 alpha <- 2.1
 current_val <- new.env()
@@ -77,7 +79,8 @@ current_val$t2 <- 0
 gamma1 <- 0.9
 gamma2 <- 0.1
 
-out_vec1 <- sapply(2:t,function(t_1) {
+out_vec1 <- lapply(1:t,function(t_1) {
+
   if(t_1<(t/2)) {
     gamma <- gamma1
   } else {
@@ -86,32 +89,46 @@ out_vec1 <- sapply(2:t,function(t_1) {
   if(t_1==1) {
     t_11 <- init_sides1[1]
     t_12 <- init_sides1[2]
+    return(data_frame(t_11,t_12))
   } else {
     t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
     t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj2)*current_val$t1) + rnorm(1,sd=0.25)
   }
   current_val$t1 <- t_11
   current_val$t2 <- t_12
-  return(c(t_11,t_12))
-}) %>% t
-out_vec1 <- rbind(matrix(init_sides1,ncol=2),out_vec1)
+  return(data_frame(t_11,t_12))
+})  %>% bind_rows
 
-out_vec1 %>% as_data_frame %>% 
+out_vec1 %>% 
   mutate(time=1:t) %>% 
   gather(series,estimates,-time) %>% 
   ggplot(aes(y=estimates,x=time,linetype=series)) +geom_path() +theme_minimal() +
   geom_vline(xintercept=(t/2),linetype=4)
 
-combine_vec <- cbind(out_vec1,out_vec2)
+combine_vec <- bind_cols(out_vec1,out_vec2) %>% as.matrix
 
-elite_ids <- rep(1:sides,times=cit*t)
-time_ids <- rep(1:t,times=cit*sides)
-cit_ids <- rep(1:cit,each=sides*t)
-gamma_ids <- if_else(time_ids<(t/2),0L,1L)
-combine_ids <- unique(cbind(elite_ids,cit_ids,time_ids,gamma_ids))
+elite_ids <- rep(1:sides,times=cit)
+cit_ids <- rep(1:cit,each=sides)
+
+all_ids <- lapply(1:t,function(i) {
+  data_frame(elite_ids,cit_ids)
+})
+names(all_ids) <- as.character(1:t)
+all_ids <- bind_rows(all_ids,
+                     .id='time_ids') %>% 
+  mutate(time_ids=as.integer(time_ids))
+combine_ids <- as.matrix(all_ids)
+
+elite_ids <- all_ids$elite_ids
+cit_ids <- all_ids$cit_ids
+time_ids <- all_ids$time_ids
 
 gen_out <- sapply(1:nrow(combine_ids), function(n) {
   outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - cit_pt[cit_ids[n]]))
+  if(is.na(outcome)) {
+    browser()
+  }
+  return(outcome)
 })
 
 combine_plot <- combine_vec %>% as_data_frame %>% 
@@ -157,16 +174,15 @@ out_fit <- sampling(code_compile,
                               K=cit,
                               `T`=t,
                               N=length(gen_out),
-                              jj=combine_ids[,1],
-                              kk=combine_ids[,2],
-                              tt=combine_ids[,3],
+                              jj=combine_ids[,2],
+                              kk=combine_ids[,3],
+                              tt=combine_ids[,1],
                       y=as.integer(gen_out),
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
                       cores=4,
-                    control=list(max_treedepth=11,
-                                 adapt_delta=0.9),
+                    control=list(max_treedepth=10),
                     init=start_func)
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')
@@ -200,10 +216,10 @@ get_time %>%
 orig_vals <- combine_vec %>% as_data_frame %>% 
   mutate(time_pts=1:n()) %>% 
   gather(Series,out_vals,-time_pts) %>% 
-  mutate(Series=fct_recode(Series,`Tunisia Islamists`='V1',
-                           `Egyptian Islamists`='V2',
-                           `Tunisian Secularists`='V3',
-                           `Egyptian Secularists`='V4'))
+  mutate(Series=fct_recode(Series,`Tunisia Islamists`='t_11',
+                           `Egyptian Islamists`='t_12',
+                           `Tunisian Secularists`='t_111',
+                           `Egyptian Secularists`='t_121'))
 
 get_time %>% 
   ggplot(aes(y=out_vals,x=time_pts,linetype=Series)) +
