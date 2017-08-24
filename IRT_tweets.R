@@ -28,8 +28,8 @@ cit <- 100
 cit_pt <- rnorm(n=cit)
 # cit_pt <- c(-sum(cit_pt),cit_pt)
 # Discrim points
-cit_dis <- rnorm(n=cit-2)
-cit_dis <- c(-1,1,cit_dis)
+cit_dis <- rnorm(n=cit)
+#cit_dis <- c(-1,1,cit_dis)
 
 # Generate side/elite ideal points
 
@@ -57,8 +57,8 @@ alpha <- 2.1
       t_12 <- init_sides2[2]
       return(data_frame(t_11,t_12))
     } else {
-      t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
-      t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj2)*current_val$t1) + rnorm(1,sd=0.25)
+      t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
+      t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj1)*current_val$t1) + rnorm(1,sd=0.25)
     }
     current_val$t1 <- t_11
     current_val$t2 <- t_12
@@ -107,14 +107,28 @@ out_vec1 %>%
 
 combine_vec <- bind_cols(out_vec1,out_vec2) %>% as.matrix
 
-elite_ids <- rep(1:sides,times=cit*t)
-time_ids <- rep(1:t,times=cit*sides)
-cit_ids <- rep(1:cit,each=sides*t)
-gamma_ids <- if_else(time_ids<(t/2),0L,1L)
-combine_ids <- cbind(elite_ids,cit_ids,time_ids)
+elite_ids <- rep(1:sides,times=cit)
+cit_ids <- rep(1:cit,each=sides)
+
+all_ids <- lapply(1:t,function(i) {
+  data_frame(elite_ids,cit_ids)
+})
+names(all_ids) <- as.character(1:t)
+all_ids <- bind_rows(all_ids,
+                     .id='time_ids') %>% 
+  mutate(time_ids=as.integer(time_ids))
+combine_ids <- as.matrix(all_ids)
+
+elite_ids <- all_ids$elite_ids
+cit_ids <- all_ids$cit_ids
+time_ids <- all_ids$time_ids
 
 gen_out <- sapply(1:nrow(combine_ids), function(n) {
   outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - cit_pt[cit_ids[n]]))
+  if(is.na(outcome)) {
+    browser()
+  }
+  return(outcome)
 })
 
 combine_plot <- combine_vec %>% as_data_frame %>% 
@@ -160,15 +174,15 @@ out_fit <- sampling(code_compile,
                               K=cit,
                               `T`=t,
                               N=length(gen_out),
-                              jj=combine_ids[,1],
-                              kk=combine_ids[,2],
-                              tt=combine_ids[,3],
+                              jj=combine_ids[,2],
+                              kk=combine_ids[,3],
+                              tt=combine_ids[,1],
                       y=as.integer(gen_out),
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
                       cores=4,
-                    control=list(max_treedepth=12),
+                    control=list(max_treedepth=10),
                     init=start_func)
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='adj[1]')
