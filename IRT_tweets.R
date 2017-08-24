@@ -6,6 +6,8 @@ require(forcats)
 require(rstan)
 require(shinystan)
 require(bayesplot)
+
+source('helper_func.R')
 # Control panel
 
 # Number of sides
@@ -35,11 +37,12 @@ cit_dis <- rnorm(n=cit)
 
 init_sides1 <- c(1,1)
 init_sides2 <- c(-1,-1)
+cuts <- c(-1,1)
 adj1 <- .9
 adj2 <- 1.1
 
-gamma1 <- 0.1
-gamma2 <- 0.9
+gamma3 <- 0.1
+gamma4 <- 0.9
 alpha <- 2.1
   current_val <- new.env()
   current_val$t1 <- 0
@@ -48,9 +51,9 @@ alpha <- 2.1
   out_vec2 <- lapply(1:t,function(t_1) {
 
     if(t_1<(t/2)) {
-      gamma <- gamma1
+      gamma <- gamma3
     } else {
-      gamma <- gamma2
+      gamma <- gamma4
     }
     if(t_1==1) {
       t_11 <- init_sides2[1]
@@ -59,8 +62,8 @@ alpha <- 2.1
       current_val$t2 <- t_12
       return(data_frame(t_11,t_12))
     } else {
-      t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
-      t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj1)*current_val$t1) + rnorm(1,sd=0.25)
+      t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
+      t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj2)*current_val$t1) + rnorm(1,sd=0.25)
     }
     current_val$t1 <- t_11
     current_val$t2 <- t_12
@@ -94,8 +97,8 @@ out_vec1 <- lapply(1:t,function(t_1) {
     current_val$t2 <- t_12
     return(data_frame(t_11,t_12))
   } else {
-    t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
-    t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj2)*current_val$t1) + rnorm(1,sd=0.25)
+    t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
+    t_12 <- current_val$t2 - gamma*(current_val$t2- (1/adj1)*current_val$t1) + rnorm(1,sd=0.25)
   }
   current_val$t1 <- t_11
   current_val$t2 <- t_12
@@ -127,13 +130,20 @@ elite_ids <- all_ids$elite_ids
 cit_ids <- all_ids$cit_ids
 time_ids <- all_ids$time_ids
 
+# gen_out <- sapply(1:nrow(combine_ids), function(n) {
+#   outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - cit_pt[cit_ids[n]]))
+#   if(is.na(outcome)) {
+#     browser()
+#   }
+#   return(outcome)
+# })
+
 gen_out <- sapply(1:nrow(combine_ids), function(n) {
-  outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - cit_pt[cit_ids[n]]))
-  if(is.na(outcome)) {
-    browser()
-  }
+  outcome <- .sample_cut(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - cit_pt[cit_ids[n]],
+                          cutpoints=cuts)
   return(outcome)
 })
+
 
 combine_plot <- combine_vec %>% as_data_frame %>% 
   mutate(time=1:t) %>% 
@@ -148,7 +158,7 @@ combine_plot <- combine_vec %>% as_data_frame %>%
   scale_colour_brewer(palette='Paired') +
   theme(panel.grid = element_blank())
 
-code_compile <- stan_model(file='poisson_irt_v2.stan')
+code_compile <- stan_model(file='ord_irt_v1.stan')
 
 # need to create time variable for gamma
 
@@ -161,6 +171,7 @@ start_func <- function() {
                    matrix(rep(0, (t-1)*sides),ncol=sides)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
+       C=3,
        ts_sigma=rep(0.25,sides),
        adj=c(1,1),
        mean_delta=0,
@@ -193,8 +204,7 @@ mcmc_trace(to_plot,pars='adj[1]')
 mcmc_trace(to_plot,pars='adj[2]')
 adj_est <- as.array(out_fit,'adj')
 mcmc_recover_intervals(x=adj_est,true = c(adj1,adj2))
-mcmc_recover_intervals(x=as.array(out_fit,c('gamma1','gamma2')),true = c(c(gamma1,gamma2),
-                                                                        c(gamma1,gamma2)))
+mcmc_recover_intervals(x=as.array(out_fit,c('gamma1','gamma2')),true = c(gamma1,gamma2,gamma3,gamma4))
 mcmc_recover_intervals(x=as.array(out_fit,'alpha'),true = c(combine_vec)*-1+2)
 
 get_time <- rstan::extract(out_fit,pars='alpha',permute=T)$alpha
