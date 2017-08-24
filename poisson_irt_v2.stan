@@ -38,8 +38,8 @@ transformed parameters {
 }
 
 model {
-  alpha[1,1] ~ normal(start_vals[1],0.001);
-  alpha[1,2:4] ~ normal(0,1);
+  alpha[1,] ~ normal(start_vals,0.001);
+
   //gamma_par1 ~ normal(0,2);
   //gamma_par2 ~ normal(0,2);
   gamma1 ~ normal(0,3);
@@ -66,8 +66,8 @@ model {
   
   //post-coup gammas
   
-  beta ~ normal(0,2);          
-  delta ~ normal(0,2);       
+  beta ~ normal(0,sigma_beta);          
+  delta ~ normal(mean_delta,sigma_delta);       
   for(n in 1:N)
     y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }

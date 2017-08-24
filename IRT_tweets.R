@@ -22,7 +22,7 @@ t <- 100
 
 # Number of citizens
 
-cit <- 100
+cit <- 50
 
 # Citizen points
 cit_pt <- rnorm(n=cit)
@@ -46,7 +46,7 @@ alpha <- 2.1
   current_val$t2 <- 0
   
   out_vec2 <- lapply(1:t,function(t_1) {
-    
+
     if(t_1<(t/2)) {
       gamma <- gamma1
     } else {
@@ -55,6 +55,8 @@ alpha <- 2.1
     if(t_1==1) {
       t_11 <- init_sides2[1]
       t_12 <- init_sides2[2]
+      current_val$t1 <- t_11
+      current_val$t2 <- t_12
       return(data_frame(t_11,t_12))
     } else {
       t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj1)*current_val$t2) + rnorm(1,sd=0.25)
@@ -80,7 +82,6 @@ gamma1 <- 0.9
 gamma2 <- 0.1
 
 out_vec1 <- lapply(1:t,function(t_1) {
-
   if(t_1<(t/2)) {
     gamma <- gamma1
   } else {
@@ -89,6 +90,8 @@ out_vec1 <- lapply(1:t,function(t_1) {
   if(t_1==1) {
     t_11 <- init_sides1[1]
     t_12 <- init_sides1[2]
+    current_val$t1 <- t_11
+    current_val$t2 <- t_12
     return(data_frame(t_11,t_12))
   } else {
     t_11 <- current_val$t1 -  gamma*(current_val$t1- (adj2)*current_val$t2) + rnorm(1,sd=0.25)
@@ -106,6 +109,7 @@ out_vec1 %>%
   geom_vline(xintercept=(t/2),linetype=4)
 
 combine_vec <- bind_cols(out_vec1,out_vec2) %>% as.matrix
+
 
 elite_ids <- rep(1:sides,times=cit)
 cit_ids <- rep(1:cit,each=sides)
@@ -135,10 +139,10 @@ combine_plot <- combine_vec %>% as_data_frame %>%
   mutate(time=1:t) %>% 
   gather(series,estimates,-time) %>% 
   mutate(series=factor(series),
-         series=fct_recode(series,`Tunisia Islamists`='V1',
-                           `Egypt Islamists`='V2',
-                           `Tunisia Secularists`='V3',
-                           `Egypt Secularists`='V4'))
+         series=fct_recode(series,`Tunisia Islamists`='t_11',
+                           `Egypt Islamists`='t_12',
+                           `Tunisia Secularists`='t_111',
+                           `Egypt Secularists`='t_121'))
   combine_plot %>% ggplot(aes(y=estimates,x=time,linetype=series,colour=series)) +geom_path(size=1) +theme_minimal() +
   geom_vline(xintercept=(t/2),linetype=4) +
   scale_colour_brewer(palette='Paired') +
@@ -153,18 +157,18 @@ time_gamma <- c(rep(1L,(t/2)-1),rep(2L,t/2))
 #function to create starting values
 
 start_func <- function() {
-  list(alpha=rbind(matrix(c(init_sides1,init_sides2),ncol=4),
-                   matrix(rep(0, 99*4),ncol=4)),
+  list(alpha=rbind(matrix(c(init_sides1,init_sides2),ncol=sides),
+                   matrix(rep(0, (t-1)*sides),ncol=sides)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
-       ts_sigma=rep(0.25,4),
+       ts_sigma=rep(0.25,sides),
        adj=c(1,1),
        mean_delta=0,
        mean_beta=0,
        sigma_beta=1,
        sigma_delta=1,
-       beta=rnorm(n=100),
-       delta=rnorm(100),
+       beta=rnorm(n=cit),
+       delta=rnorm(cit),
        gamma_par1=0,
        gamma_par2=0)
 }
