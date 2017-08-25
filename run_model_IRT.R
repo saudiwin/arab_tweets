@@ -141,13 +141,16 @@ sd_vals <- apply(get_time,2,sd)
 filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
   filter(sd_vals<2)
 
-top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:2) %>% pull(discrim_id)
-bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:2) %>% pull(discrim_id)
+# number to identify
+id_num_high <- 20
+id_num_low <- 4
+top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
+bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
 
 new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
   as.numeric
 
-new_vals[which(combined_data_small_nomis$cit_ids==top_two)]
+new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
 
 combined_data_small_nomis$cit_ids <- new_vals
 
@@ -170,12 +173,14 @@ start_func <- function() {
 
 code_compile <- stan_model(file='ord_irt_id.stan')
 
-out_fit <- sampling(code_compile,cores=4,
+out_fit_vb <- vb(code_compile,
               data=list(J=max(combined_data_small_nomis$coding_num),
                         K=max(combined_data_small_nomis$cit_ids),
                         `T`=max(combined_data_small_nomis$time_three),
                         N=nrow(combined_data_small_nomis),
-                        C=3,
+                        C=max(combined_data_small_nomis$nn),
+                        id_num_high=id_num_high,
+                        id_num_low=id_num_low,
                         jj=combined_data_small_nomis$coding_num,
                         kk=combined_data_small_nomis$cit_ids,
                         tt=combined_data_small_nomis$time_three,
@@ -185,6 +190,25 @@ out_fit <- sampling(code_compile,cores=4,
                         time_gamma=times$coup[-nrow(times)]),
               init=start_func)
 
+saveRDS(object = out_fit_vb,'out_fit_vb.rds')
+
+out_fit_id <- sampling(code_compile,cores=5,
+                    data=list(J=max(combined_data_small_nomis$coding_num),
+                              K=max(combined_data_small_nomis$cit_ids),
+                              `T`=max(combined_data_small_nomis$time_three),
+                              N=nrow(combined_data_small_nomis),
+                              C=max(combined_data_small_nomis$nn),
+                              id_num_high=id_num_high,
+                              id_num_low=id_num_low,
+                              jj=combined_data_small_nomis$coding_num,
+                              kk=combined_data_small_nomis$cit_ids,
+                              tt=combined_data_small_nomis$time_three,
+                              y=as.integer(combined_data_small_nomis$nn),
+                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+                              start_vals=c(-1,-1,1,1),
+                              time_gamma=times$coup[-nrow(times)]),
+                    init=start_func)
+saveRDS(out_fit_id,'out_fit_id.rds')
 
 to_plot <- as.array(out_fit)
 
