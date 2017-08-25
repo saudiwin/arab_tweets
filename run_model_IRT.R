@@ -131,6 +131,61 @@ out_fit <- vb(code_compile,
                               start_vals=c(-1,-1,1,1),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
+
+# run it again, and this time constrain deltas
+
+get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
+
+mean_vals <- apply(get_time,2,mean)
+sd_vals <- apply(get_time,2,sd)
+filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
+  filter(sd_vals<2)
+
+top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:2) %>% pull(discrim_id)
+bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:2) %>% pull(discrim_id)
+
+new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
+  as.numeric
+
+new_vals[which(combined_data_small_nomis$cit_ids==top_two)]
+
+combined_data_small_nomis$cit_ids <- new_vals
+
+start_func <- function() {
+  list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
+                   matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
+       gamma1=c(0.5,0.5),
+       gamma2=c(0.5,0.5),
+       ts_sigma=rep(0.25,4),
+       adj=c(1,1),
+       mean_delta=0,
+       mean_beta=0,
+       sigma_beta=1,
+       sigma_delta=1,
+       beta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       gamma_par1=0,
+       gamma_par2=0)
+}
+
+code_compile <- stan_model(file='ord_irt_id.stan')
+
+out_fit <- sampling(code_compile,cores=4,
+              data=list(J=max(combined_data_small_nomis$coding_num),
+                        K=max(combined_data_small_nomis$cit_ids),
+                        `T`=max(combined_data_small_nomis$time_three),
+                        N=nrow(combined_data_small_nomis),
+                        C=3,
+                        jj=combined_data_small_nomis$coding_num,
+                        kk=combined_data_small_nomis$cit_ids,
+                        tt=combined_data_small_nomis$time_three,
+                        y=as.integer(combined_data_small_nomis$nn),
+                        coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+                        start_vals=c(-1,-1,1,1),
+                        time_gamma=times$coup[-nrow(times)]),
+              init=start_func)
+
+
 to_plot <- as.array(out_fit)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
@@ -138,6 +193,7 @@ mcmc_trace(to_plot,pars='gamma1[1]')
 mcmc_trace(to_plot,pars='gamma1[2]')
 mcmc_trace(to_plot,pars='gamma2[1]')
 mcmc_trace(to_plot,pars='gamma2[2]')
+
 mcmc_intervals(to_plot,regex_pars = c('gamma1|gamma2'))
 mcmc_intervals(to_plot,regex_pars = c('alpha'))
 
@@ -197,12 +253,7 @@ get_time %>%
 ggsave('arab_ideology.png')
 
 
-get_time %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_summary(geom='ribbon',fun.data = 'median_hilow') + theme_minimal() +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='')
+deltas <- rstan::extract(out_fit,pars='delta',permuted=T)$delta
 
+apply(deltas,2,mean) %>% hist
 

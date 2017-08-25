@@ -41,10 +41,6 @@ transformed parameters {
 
 model {
   alpha[1,] ~ normal(start_vals,0.01);
-<<<<<<< HEAD
-=======
-
->>>>>>> bb698df5fdc7ec5dbf869c63257f0893469a3f49
 
   //gamma_par1 ~ normal(0,2);
   //gamma_par2 ~ normal(0,2);
@@ -70,8 +66,8 @@ model {
   
   //post-coup gammas
   
-  beta ~ normal(0,2);          
-  delta ~ normal(0,2);       
+  beta ~ normal(0,sigma_beta);          
+  delta ~ normal(mean_delta,sigma_delta);       
   for(n in 1:N)
     y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
 }
