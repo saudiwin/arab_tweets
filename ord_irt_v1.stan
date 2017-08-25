@@ -51,8 +51,8 @@ model {
     steps[c+1] - steps[c] ~ normal(0,3); 
   adj ~ normal(1,.25);
   mean_delta ~ normal(0,2);
-  sigma_beta ~ exponential(1);
-  sigma_delta ~ exponential(1);
+  sigma_beta ~ exponential(.1);
+  sigma_delta ~ exponential(.1);
 
   alpha[2:T,1] ~ normal(alpha[1:(T-1),1] - gamma1[time_gamma].*(alpha[1:(T-1),1] - (adj[1])*alpha[1:(T-1),2]),
 .25);

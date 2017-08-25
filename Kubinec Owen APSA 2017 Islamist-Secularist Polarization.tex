@@ -1,10 +1,10 @@
 \documentclass[12pt]{article}
 \fontfamily{times}
 \usepackage{url}
-\usepackage[margin=1in]{geometry}
+
 \usepackage{array}
 \usepackage{ragged2e}
-
+\usepackage[utf8]{inputenc}
 \usepackage{fullpage}
 \usepackage{parskip}
 \usepackage{titling}
@@ -33,26 +33,19 @@
 
 \title{Islamist-Secularist Protest during the Arab Uprising}
 
+\usepackage[margin=1in]{geometry}
+
 \begin{document}
 
 \maketitle
 
-\abstract{Scholars continue to disagree as to how far contentious politics diffuses within and across states and by what mechanisms it does so. We use new data and empirical measures to test polarization during and after the Arab Uprisings of 2010-12. After authoritarian governments began to fall, populations in several states began to polarize between secularists and Islamists over what kind of regime was to replace the ousted one. We hypothesize that this Islamist-secularist polarization was triggered by catalytic events (such as Muslim Brotherhood electoral victory in Egypt) and diffused transnationally owing to social media and satellite television, dividing anti-status-quo actors throughout the region. To examine polarization over time, we collected a comprehensive dataset on elite and citizen Twitter accounts across Arab countries after the Arab Spring. Using item-response models, we model polarization as the difference in latent ideological position between elites, and we show how polarization within countries changes over time in response to exogenous political shocks. By doing so we are the first to offer compelling statistical evidence of the endogenous process of polarization across competing ideological groups and states.\footnote{\linespread{.5} Prepared for presentation at the Annual Meeting of the American Political Science Association, San Francisco, 1 September 2017. Copyright \textcopyright 2017 by the American Political Science Association.\\
-		The authors thank the Amb. Henry J. and Mrs. Marion R. Taylor Chair at the University of Virginia for research funding.  John Owen thanks the Liu Institute for Global Inquiry at the University of British Columbia for providing a research venue. Robert Kubinec thanks the University of Virginia's Quantitative Collaborative for computing resources and Jonathan Kropko for helpful feedback on this project.}}
-
-
-
-
-
-
-
+\abstract{Scholars continue to disagree as to how far contentious politics diffuses within and across states and by what mechanisms it does so. We use new data and empirical measures to test polarization during and after the Arab Uprisings of 2010-12. After authoritarian governments began to fall, populations in several states began to polarize between secularists and Islamists over what kind of regime was to replace the ousted one. We hypothesize that this Islamist-secularist polarization was triggered by catalytic events (such as Muslim Brotherhood electoral victory in Egypt) and diffused transnationally owing to social media and satellite television, dividing anti-status-quo actors throughout the region. To examine polarization over time, we collected a comprehensive dataset on elite and citizen Twitter accounts across Arab countries after the Arab Spring. Using item-response models, we model polarization as the difference in latent ideological position between elites, and we show how polarization within countries changes over time in response to exogenous political shocks. By doing so we are the first to offer compelling statistical evidence of the endogenous process of polarization across competing ideological groups and states.\footnote{\linespread{.5} Prepared for presentation at the Annual Meeting of the American Political Science Association, San Francisco, 1 September 2017. Copyright \textcopyright 2017 by the American Political Science Association. The authors thank the Amb. Henry J. and Mrs. Marion R. Taylor Chair at the University of Virginia for research funding.  John Owen thanks the Liu Institute for Global Inquiry at the University of British Columbia for providing a research venue. Robert Kubinec thanks the University of Virginia's Quantitative Collaborative for computing resources and Jonathan Kropko for helpful feedback on this project.}}
 
 \section*{Introduction}
-
-The Arab Uprising of 2010-13 was an exceedingly complex phenomenon.  The initial event – the self-immolation of Mohamed Bouazizi in Sidi Bouzid, Tunisia – triggered a chain of events marked by interaction and feedback loops.  During the Uprising, experts predicted a particular unfolding or winding down of the phenomenon, and often were wrong.  Some assured their readers that the Tunisian unrest of December 2010 and January 2011 would not spread to other Arab countries (Karon 2011; Walt 2011); others predicted that the unrest that did spread to Libya, Egypt, Yemen, Syria, and elsewhere would bring liberal democracy to those countries (Obama 2011, Juppé 2011 – any non-politicians?).  In other words, two of the unpredictable developments were the spread of unrest across countries and the evident shift in the goals of rebels.  
+The Arab Uprising of 2010-13 was an exceedingly complex phenomenon.  The initial event – the self-immolation of Mohamed Bouazizi in Sidi Bouzid, Tunisia – triggered a chain of events marked by interaction and feedback loops.  During the Uprising, experts predicted a particular unfolding or winding down of the phenomenon, and often were wrong.  Some assured their readers that the Tunisian unrest of December 2010 and January 2011 would not spread to other Arab countries (Karon 2011; Walt 2011); others predicted that the unrest that did spread to Libya, Egypt, Yemen, Syria, and elsewhere would bring liberal democracy to those countries (Obama 2011, Jupp\'{e} 2011 – any non-politicians?).  In other words, two of the unpredictable developments were the spread of unrest across countries and the evident shift in the goals of rebels.  
 A helpful approach to explaining, if not predicting, the progress of the Arab Uprising and infectious political unrest more generally is via group polarization, or the endogenous segregation of a population by preferences into two or more mutually antagonistic groups.  
 
-Group polarization is situational and hence may be short-lived; it is different from the long-term, materially based social polarization that many social scientists study (Moulaert et al. 2003).  Group polarization is a way to conceive of how identities and preferences change in response to exogenous events such as a public demonstration or a coup d'état.  A stylized version runs as follows:  At time t, an unmodeled event takes place (e.g., Bouazizi's self-immolation); at t+1, the news spreads; at t+2, a portion of the population of Sidi Bouzid becomes angry and identifies more strongly against the local and national government, as reflected in anti-government speech and action; at t+3, news of that speech and action spreads; at t+4, a portion of Sidi Bouzid's population becomes angry at the protesters and identifies more strongly with the government, as reflected in pro-government speech and action; at t+5, news of that speech and action spread within Tunisia and beyond; and so on.  Group polarization is self-reinforcing.  It may be slowed, halted, or reversed by various developments, including coercion (censorship, physical force) by governments.
+Group polarization is situational and hence may be short-lived; it is different from the long-term, materially based social polarization that many social scientists study (Moulaert et al. 2003).  Group polarization is a way to conceive of how identities and preferences change in response to exogenous events such as a public demonstration or a coup d'\'{e}tat.  A stylized version runs as follows:  At time $t$, an unmodeled event takes place (e.g., Bouazizi's self-immolation); at $t+1$, the news spreads; at $t+2$, a portion of the population of Sidi Bouzid becomes angry and identifies more strongly against the local and national government, as reflected in anti-government speech and action; at $t+3$, news of that speech and action spreads; at $t+4$, a portion of Sidi Bouzid's population becomes angry at the protesters and identifies more strongly with the government, as reflected in pro-government speech and action; at $t+5$, news of that speech and action spread within Tunisia and beyond; and so on.  Group polarization is self-reinforcing.  It may be slowed, halted, or reversed by various developments, including coercion (censorship, physical force) by governments.
 
 Its situational quality, specifically its dependence on exogenous events, makes group polarization impossible to predict, but therefore especially helpful in understanding complex chains of events such as the Arab Uprising.  The group-polarization approach presupposes, with a long tradition in social theory, that people have multiple group affiliations; that belonging to one group entails defining oneself over against one or more alternative groups; that for a given individual at a given time a particular group affiliation may be more or less salient; and that individuals respond to signals of friendship and hostility from one another; and hence that populations sometimes polarize along one axis of identity, temporarily submerging other axes of identity.  Of particular interest in the Arab Uprising are (1) cross-polarization, or the shift from polarization along one axis (e.g., pro- versus anti-regime) to polarization along a cross-cutting axis (e.g., Islamist versus secularist), and (2) transnational polarization, i.e., simultaneous polarization along an identity axis in two countries.
 
@@ -96,17 +89,86 @@ In sum, an exogenous event that either raises the prestige of social group $A$ o
 \section*{Data Collection}
 Analyzing these phenomena quantitatively is difficult because we need good measures of ideology across countries that also varies over time. The advent of social media during the Arab Uprisings provides some of the first available data that we can use to examine the predictions of the theory. We chose to use Twitter due to its public nature and the ability to closely track elite users, or those users with a large number of followers. We built a sample of Egyptian and Tunisian twitter users that are broadly representative of political thinking \& discourse within these countries.
 
-To obtain the sample, we started with a universe of tweets from the early stage of the Arab Spring, December 2010 to April 1st, 2011 that all matched the search times ``Cairo", ``Alexandria" and ``Tunis" in the location field in Twitter.  This dataset of 11 million tweets parsed in order to identify users that had received the largest number of retweets and mentions during that time period. This list was then curated, both by removing accounts that were later abandoned and by adding ideological diversity. In general, Twitter in 2011 was dominated by well-educated secular elites with a flair for democracy, while Islamists and pro-regime figures were later to adopt Twitter as a medium. For example, in Egypt we added the account for Mohammed Morsi, the Islamist president affiliated with the Muslim Brotherhood, and in Tunisia we added Rached Ghannouchi, long considered to be the guiding force of the Islamist Nahda movement in Tunisia. The full list of users selected for analysis is available in the appendix.
+To obtain the sample, we started with a universe of tweets from the early stage of the Arab Spring, December 2010 to April 1st, 2011 that all matched the search times ``Cairo", ``Alexandria" and ``Tunis" in the location field in Twitter.  This dataset of 11 million tweets was then parsed in order to identify users that had received the largest number of retweets and mentions during that time period. We curated the resulting list of elite users, both by removing accounts that were later abandoned and by adding ideological diversity. In general, Twitter in 2011 was dominated by well-educated secular elites with a flair for democracy, while Islamists and pro-regime figures were later to adopt Twitter as a medium. For example, in Egypt we added the account for Mohammed Morsi, the Islamist president affiliated with the Muslim Brotherhood, and in Tunisia we added Rached Ghannouchi, long considered to be the guiding force of the Islamist Nahda movement in Tunisia. The full list of users selected for analysis is available in the appendix.
 
 The final sample amounted to 165 Twitter users, 64 from Tunisia and 101 from Egypt. The larger number from Egypt reflects the much larger Twitter-sphere in the country and hence the need to obtain a broader sample of users. We then had two graduate assistants code the user list along two axes: Islamist-Secularist and Pro/Anti Democracy. The first axis is easier to identify in the data and is the one that we focus on in this paper because the election of Islamists in Egypt and Tunisia's initial plebiscites after democratization caused many elite Twitter users to weigh in, providing strong evidence of their views on politics and religion. In addition to the binary classification, we also had the graduate coders record their confidence in their assessment on a scale of 0 to 100. We further reviewed cases that had an uncertainty of less than 50 percent. In general, these users did not tweet as much on political topics and their ideology is relatively unknown. We excluded these users for the analyses we report here as their lack of ideological content makes them uninteresting to this analysis.
 
-With this finished list of 165 elite users, we then collected their full tweet histories from March 31st, 2013 to December 31st, 2013. This 1.7 million list of tweets was then filtered down to 1.2 million tweets that constitute each user's own composed tweets by removing all of each user's retweets. Using Twitter's open API, the retweets of all of these 1.2 million tweets was then downloaded as a list of user IDs for each user per day for a total of 275 days. The use of the open API represents a limitation in the data collection because only 100 re-tweets of a given retweet may be downloaded; however, this limit was rarely reached in practice because very few of the tweets in question had more than 100 retweets. Even ex-President Mohammed Morsi, who has more than a million twitter followers, averaged only a few hundred re-tweets per tweet during 2013. Nonetheless, this data must still be understood as a sample of the full number of retweets, especially for users with a very large popular following.
+With this finished list of 165 elite users, we then collected their full tweet histories from March 31st, 2013 to December 31st, 2013. This 1.7 million list of tweets was then filtered down to 1.2 million tweets that constitute each user's own composed tweets by removing all of each user's retweets. Using Twitter's open API, the retweets of all of these 1.2 million original tweets was then downloaded as a list of user IDs for each user per day for a total of 275 days. The use of the open API represents a limitation in the data collection because only 100 re-tweets of a given retweet may be downloaded; however, this limit was rarely reached in practice because very few of the tweets in question had more than 100 retweets. Even ex-President Mohammed Morsi, who has more than a million twitter followers, averaged only a few hundred re-tweets per tweet during 2013. Nonetheless, this data must still be understood as a sample of the full number of retweets, especially for users with a very large popular following.
 
-The final database comprises a set of elites $j$ and citizens $i$ in which the outcome is the number of times that $i$ retweeted $j$ for each day in the sample. The set of elites is further divided into four groups: Islamists in Egypt and Tunisia versus secularists in Egypt and Tunisia. We can then think of each group having an average position in an ideological ideal point space that varies over the number of days in the sample. 
+The final database comprises a set of elites $j$ and citizens $i$ in which the outcome is the number of times that $i$ retweeted $j$ for each three-day in the sample. Three-day periods were chosen because it helps to address weekend seasonality (any particular period could fall on any part of the week), and because it results in a reasonable 92 time points in our sample. The set of elites is further divided into four groups based on the RA coding: Islamists in Egypt and Tunisia versus secularists in Egypt and Tunisia. We can then think of each group having an average position in an ideological ideal point space that varies over the number of days in the sample. 
 
 \section*{Modeling Ideological Polarization Over Time}
-To adequately model these phenomena, we combine two distinct literatures in statistics: time-series econometrics, in particular co-integrated equations, with the item-response theory literature on estimating latent concepts. 
+To adequately model these phenomena, we combine two distinct literatures in statistics: time-series econometrics, in particular co-integrated equations, with the item-response theory literature on estimating latent concepts. Item-response theory has been used in political science for estimating the latent positions of actors based on roll-call voting datasets \parencite{jackman2004}, and more recently, through social media and campaign finance contributions \parencite{bonica2014,barbera2015}. Item-response theory (IRT) has also been applied to difficult measurement problems, in particular the construction of democratization indices from a variety of coding sources \parencite{vdem2017,treier2008}. Item response models estimate latent traits for individual cases that can be divided into two distinct groups, such as raters and countries, lawmakers and bills, or in our sample, citizens and elites. 
 
+What is crucial about these models is that the latent estimates are unobserved. For that reason, there is a strong connection between IRT and factor analysis \parencite{takane1986}, and similar concerns over the interpretation of the latent scores are justified. The latent dimension estimated by an IRT model will be the lowest-variance explanation of the observed data, but further prior knowledge and post-estimation validation is necessary to confirm that the results correspond with the concept of interest. We are confident in our application of this technique to the data because of our prior coding of users into similar ideological groups. For that reason, the resulting estimates will reflect these latent cleavages instead of arbitrary social behaviors or groupings.
+
+The application of time series modeling to IRT is more limited despite the fact that political science has many time-varying variables with considerable measurement error. This paper builds on the approaches of \textcite{quinn2002} and \textcite{kropko2013} who use random-walk priors on latent-traits to incorporate change in ideal points over time. In time-series lingo, these latent traits become integrated variables that exhibit an infinite memory process: any shifts in the ideal points are remembered in the time series over time \parencite[Ch. 5]{timeseries2014}. This assumption is safe for ideological constructs because we often do not imagine ideology reflecting stationarity, i.e., that ideologies receive random shocks that cause diversion and eventual return to an equilibrium \parencite[Ch. 2]{timeseries2014}. Rather, ideological polarization over time should move in a continually-changing direction as human beings adapt and respond to changing environmental conditions \parencite{owen2010clash}.
+
+In addition to examining change over time, our research explores transnational ideological polarization. We want to know whether an increase in Islamist-secularist polarization in Egypt causes changes in Islamist-secularist polarization in Tunisia. This theory that we explicated informally corresponds most closely to the the idea of co-integrated time series. A co-integrated series involves two integrated or random-walk time series that exhibit a stationary relationship over time \parencite{engle1987}. Formally it can be defined as follows: given two integrated time series  $y$,
+
+\begin{equation}
+	y_t = y_{t-1} + \epsilon_{yt}
+\end{equation}
+
+and $x$,
+
+\begin{equation}
+x_t = x_{t-1} + \epsilon_{xt}
+\end{equation}
+
+we propose that these series are co-integrated as a linear combination through the parameters $\beta_1$ and $\beta_2$ such that the following identity holds true:
+
+\begin{equation}
+z_t = \beta_1 y_t + \beta_2 x_t + \epsilon_{zt}
+\end{equation}
+
+Where $z_t$ represents the relationship between $y_t$ and $x_t$ that is stable (stationary) over time and $\epsilon_{zt}$ is a white-noise error term \parencite[253]{engle1987}. Thus while both $x_t$ and $y_t$ follow a random walk, the existence of $z_t$ ensures that they will co-evolve. Furthermore, the parameters $\beta_1$ and $\beta_2$ determine the direction of feedback, i.e., how much feedback $y_t$ receives from $x_t$ and vice versa. In time series parlance they are known as the ``co-integrating vector", and usually one $\beta$ is fixed at 1 as otherwise the two parameters are un-identified \parencite[253]{timeseries2014}. 
+
+We can then combine these ideas into a two-equation co-integrating equation model in which $x_t$ and $y_t$ are functions both of their previous values and of a feedback process from each:
+
+\begin{align}
+ y_t =& y_{t-1} + \gamma (y_{t-1} - \frac{\beta_2}{\beta_1}x_{t-1}) + \epsilon_{yt}\\
+  x_t =& x_{t-1} + \gamma (x_{t-1} - \frac{\beta_1}{\beta_2}y_{t-1}) + \epsilon_{xt}
+\end{align}
+
+While co-integrated models are generally estimated in differences, we do not care about the differenced version of latent ideological positions, and so the model becomes somewhat simpler. The scaling parameter $\gamma \in (0,1)$ governs the degree of co-integration in the model: when $\gamma$ is high, the two time series will follow each other closer, but when $\gamma$ is small, the series are only marginally co-integrated. Furthermore, if we fix $\beta_1$ at 1, then a value of $\beta_2$ greater than 1 signifies that $y_t$ sends more influence to $x_t$ than $x_t$ sends to $y_t$. 
+
+To apply this form of feedback process to IRT, first consider the standard 2-PL IRT model that is identical to the canonical ideal point model in political science \parencite{jackman2004}:
+
+\begin{equation}
+Y_{ij} = \delta_j * \alpha_i - \eta_j
+\end{equation}
+
+In this model, $\alpha_i$ represent the latent ideal points of the elites, while $\delta_j$ represent discrimination parameters for each citizen (equivalent to factor scores) and $\eta_j$ can be interpreted as the average probability that citizen $j$ retweets elite $i$ $Y_{ij}$ times. Given that in our data the number of re-tweets of a particular elite $i$ has a maximum of three for each period, we use an ordered-logistic model for $Y_{ij}$ that estimates cutpoints $c_{ijk}$ for each retweet $k \in K$ with a maximum of $K=3$.\footnote{For a full explication of the ordinal IRT model for ideal points, see \parencite{kubinec2017}}
+
+For our purposes, we have four $\alpha_i$ parameters that represent each of our ideological groups, so we can subscript them as $\alpha_{ig}$ where $g \in [1,2]$ cleavages (Islamist, Secularist) and $i \in [1,2]$ countries (Tunisia, Egypt).  Following on \textcite{quinn2002} and \textcite{kropko2013}, we can include the co-integration between the ideological groups $g$ via priors on the $\alpha_{ig}$:
+
+\begin{equation*}
+\alpha_{igt}  \sim N(\alpha_{ig(t-1)} + \gamma_g (\alpha_{ig(t-1)} - \frac{1}{\beta_{2g}}  \alpha_{/ig(t-1)}),0.25)
+\end{equation*}
+
+In this prior, we fix $\epsilon_{igt}$ at $0.25$ so that ideal points of each of the ideological groups are allowed to vary slowly over time. The actual choice is arbitrary as latent ideal points are only identified up to a scale rotation \parencite{gelman2005}, but using a small number relative to the size of the ideal points ensures that the ideal points remain relatively stable over time, but are allowed to vary.
+
+To build a full Bayesian model, we need to assign priors to all other parameters in the model. These are as follows:
+
+\begin{align*}
+	\eta_j &\sim N(0,\sigma_{\eta})\\
+	\delta_j &\sim N(\mu_{\delta},\sigma_{\delta}) \\
+	c_{k} - c_{k-1} &\sim N(0,5);\\
+	\gamma_g &\sim N(0,3);\\
+	\beta_{2g} &\sim  N(1,.1);\\
+	\sigma_{\eta} &\sim E(.1);\\
+	\sigma_{\delta} &\sim E(.1);\\
+	\mu_{\delta} &\sim N(0,2);\\
+\end{align*}
+
+The prior on $\gamma_g$ is sampled from an unconstrained space that corresponds to using a logit link function on $(0,1)$. The hierarchical priors on $\eta_j$ and $\delta_j$ are used for both regularization, as there are many citizens in the model, and for identification \parencite{gelman2005}. The difference prior on the cutpoints $c_k$ are used because the cutpoints are only identified up to a difference. Finally, the feedback parameter $\beta_{2g}$ is given a tight prior around 1 to reflect our prior belief that ideological groups in either country are equally likely to influence each other. We further identify the model by constraining the polarity of $\delta_j$s and by fixing the first ideal point $\alpha_{ig1}$ for each groups to either 1 or -1 so that the system evolves from the same starting points.
+
+ 
+
+
+
+\printbibliography
 
 
 

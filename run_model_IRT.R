@@ -210,7 +210,7 @@ out_fit_id <- sampling(code_compile,cores=5,
                     init=start_func)
 saveRDS(out_fit_id,'out_fit_id.rds')
 
-to_plot <- as.array(out_fit)
+to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
 mcmc_trace(to_plot,pars='gamma1[1]')
@@ -229,7 +229,7 @@ all_gammas <- data_frame(Islamists=gamma1[,2]-gamma1[,1],
                          Secularists=gamma2[,2]-gamma2[,1]) %>% 
   gather(`Ideological\nPairing`,Difference) %>% 
   group_by(`Ideological\nPairing`) %>% 
-  mutate(mean_val=mean(Difference))
+  mutate(mean_val=median(Difference))
 
 ggplot(all_gammas,aes(x=Difference)) +
   geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha=0.5,adjust=0.5) +
@@ -238,6 +238,11 @@ ggplot(all_gammas,aes(x=Difference)) +
   xlab('Gamma Difference') +
   ylab('Posterior Density') +
   geom_vline(aes(xintercept=mean_val,linetype=`Ideological\nPairing`))
+
+summarize(all_gammas,mean_val=mean(Difference),
+          median_val=median(Difference),
+          upper=quantile(Difference,0.9),
+          lower=quantile(Difference,0.1))
 
 get_time <- rstan::extract(out_fit,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]
@@ -281,3 +286,10 @@ deltas <- rstan::extract(out_fit,pars='delta',permuted=T)$delta
 
 apply(deltas,2,mean) %>% hist
 
+lookat <- summary(out_fit_id)
+hist(lookat$summary[,'Rhat'])
+
+non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
+mcmc_trace(to_plot,pars='mean_delta')
+mcmc_trace(to_plot,pars='sigma_delta')
+mcmc_trace(to_plot,pars='lp__')
