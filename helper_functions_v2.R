@@ -25,7 +25,6 @@ all_time_rts <- function(today=NULL,
   
   
   dataset <- filter(dataset,days==today)
-  dataset <- sample_n(dataset,300)
   if(nrow(dataset)==0) {
     return(NULL)
   }

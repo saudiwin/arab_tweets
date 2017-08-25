@@ -4,6 +4,8 @@ data {
   int<lower=1> N;              // number of observations
   int<lower=1> T;  //number of time points
   int C;
+  int id_num_high;
+  int id_num_low;
   int<lower=1,upper=J> jj[N];  // elite for observation n
   int<lower=1,upper=K> kk[N];  // student for observation n
   int<lower=1> tt[N]; // t for observation N
@@ -13,7 +15,7 @@ data {
   int time_gamma[T-1];
 }
 parameters {    
-  vector[K-4] delta_free;                  // discriminations
+  vector[K-(id_num_low+id_num_high)] delta_free;                  // discriminations
   //real mean_beta;     //mean citizen response
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
@@ -27,8 +29,8 @@ parameters {
   //real gamma_par2;
   real<lower=0> sigma_beta;
   real<lower=0> sigma_delta;
-  vector<upper=0>[2] delta_con_low;
-  vector<lower=0>[2] delta_con_high;
+  vector<upper=0>[id_num_low] delta_con_low;
+  vector<lower=0>[id_num_high] delta_con_high;
 }
 
 transformed parameters {
