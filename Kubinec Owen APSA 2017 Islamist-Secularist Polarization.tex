@@ -1,7 +1,7 @@
 \documentclass[12pt]{article}
 \fontfamily{times}
 \usepackage{url}
-
+\usepackage[margin=1in]{geometry}
 \usepackage{array}
 \usepackage{ragged2e}
 \usepackage[utf8]{inputenc}
@@ -33,15 +33,14 @@
 
 \title{Islamist-Secularist Protest during the Arab Uprising}
 
-\usepackage[margin=1in]{geometry}
-
 \begin{document}
 
 \maketitle
 
-\abstract{Scholars continue to disagree as to how far contentious politics diffuses within and across states and by what mechanisms it does so. We use new data and empirical measures to test polarization during and after the Arab Uprisings of 2010-12. After authoritarian governments began to fall, populations in several states began to polarize between secularists and Islamists over what kind of regime was to replace the ousted one. We hypothesize that this Islamist-secularist polarization was triggered by catalytic events (such as Muslim Brotherhood electoral victory in Egypt) and diffused transnationally owing to social media and satellite television, dividing anti-status-quo actors throughout the region. To examine polarization over time, we collected a comprehensive dataset on elite and citizen Twitter accounts across Arab countries after the Arab Spring. Using item-response models, we model polarization as the difference in latent ideological position between elites, and we show how polarization within countries changes over time in response to exogenous political shocks. By doing so we are the first to offer compelling statistical evidence of the endogenous process of polarization across competing ideological groups and states.\footnote{\linespread{.5} Prepared for presentation at the Annual Meeting of the American Political Science Association, San Francisco, 1 September 2017. Copyright \textcopyright 2017 by the American Political Science Association. The authors thank the Amb. Henry J. and Mrs. Marion R. Taylor Chair at the University of Virginia for research funding.  John Owen thanks the Liu Institute for Global Inquiry at the University of British Columbia for providing a research venue. Robert Kubinec thanks the University of Virginia's Quantitative Collaborative for computing resources and Jonathan Kropko for helpful feedback on this project.}}
+\abstract{Scholars continue to disagree as to how far contentious politics diffuses within and across states and by what mechanisms it does so. We use new data and empirical measures to test polarization during and after the Arab Uprisings of 2010-12. After authoritarian governments began to fall, populations in several states began to polarize between secularists and Islamists over what kind of regime was to replace the ousted one. We hypothesize that this Islamist-secularist polarization was triggered by catalytic events (such as Muslim Brotherhood electoral victory in Egypt) and diffused transnationally owing to social media and satellite television, dividing anti-status-quo actors throughout the region. To examine polarization over time, we collected a comprehensive dataset on elite and citizen Twitter accounts across Arab countries after the Arab Spring. Using item-response models, we model polarization as the difference in latent ideological position between elites, and we show how polarization within countries changes over time in response to exogenous political shocks. By doing so we are the first to offer compelling statistical evidence of the endogenous process of polarization across competing ideological groups and states.}\footnote{\linespread{.5} Prepared for presentation at the Annual Meeting of the American Political Science Association, San Francisco, 1 September 2017. Copyright \textcopyright 2017 by the American Political Science Association. The authors thank the Amb. Henry J. and Mrs. Marion R. Taylor Chair at the University of Virginia for research funding.  John Owen thanks the Liu Institute for Global Inquiry at the University of British Columbia for providing a research venue. Robert Kubinec thanks the University of Virginia's Quantitative Collaborative for computing resources and Jonathan Kropko for helpful feedback on this project.}
 
 \section*{Introduction}
+
 The Arab Uprising of 2010-13 was an exceedingly complex phenomenon.  The initial event – the self-immolation of Mohamed Bouazizi in Sidi Bouzid, Tunisia – triggered a chain of events marked by interaction and feedback loops.  During the Uprising, experts predicted a particular unfolding or winding down of the phenomenon, and often were wrong.  Some assured their readers that the Tunisian unrest of December 2010 and January 2011 would not spread to other Arab countries (Karon 2011; Walt 2011); others predicted that the unrest that did spread to Libya, Egypt, Yemen, Syria, and elsewhere would bring liberal democracy to those countries (Obama 2011, Jupp\'{e} 2011 – any non-politicians?).  In other words, two of the unpredictable developments were the spread of unrest across countries and the evident shift in the goals of rebels.  
 A helpful approach to explaining, if not predicting, the progress of the Arab Uprising and infectious political unrest more generally is via group polarization, or the endogenous segregation of a population by preferences into two or more mutually antagonistic groups.  
 
@@ -136,10 +135,10 @@ While co-integrated models are generally estimated in differences, we do not car
 To apply this form of feedback process to IRT, first consider the standard 2-PL IRT model that is identical to the canonical ideal point model in political science \parencite{jackman2004}:
 
 \begin{equation}
-Y_{ij} = \delta_j * \alpha_i - \eta_j
+Y_{ij} = \prod^{i=1}_I \prod^{j=1}_J \phi(\delta_j * \alpha_i - \eta_j)
 \end{equation}
 
-In this model, $\alpha_i$ represent the latent ideal points of the elites, while $\delta_j$ represent discrimination parameters for each citizen (equivalent to factor scores) and $\eta_j$ can be interpreted as the average probability that citizen $j$ retweets elite $i$ $Y_{ij}$ times. Given that in our data the number of re-tweets of a particular elite $i$ has a maximum of three for each period, we use an ordered-logistic model for $Y_{ij}$ that estimates cutpoints $c_{ijk}$ for each retweet $k \in K$ with a maximum of $K=3$.\footnote{For a full explication of the ordinal IRT model for ideal points, see \parencite{kubinec2017}}
+In this model, $\alpha_i$ represent the latent ideal points of the elites, while $\delta_j$ represent discrimination parameters for each citizen (equivalent to factor scores) and $\eta_j$ can be interpreted as the average probability that citizen $j$ retweets elite $i$ $Y_{ij}$ times. Given that in our data the number of re-tweets of a particular elite $i$ has a maximum of three for each period, we use an ordered-logistic function $phi(\cdot)$ for $Y_{ij}$ that estimates cutpoints $c_{ijk}$ for each retweet $k \in K$ with a maximum of $K=3$.\footnote{For a full explication of the ordinal IRT model for ideal points, see \parencite{kubinec2017}}
 
 For our purposes, we have four $\alpha_i$ parameters that represent each of our ideological groups, so we can subscript them as $\alpha_{ig}$ where $g \in [1,2]$ cleavages (Islamist, Secularist) and $i \in [1,2]$ countries (Tunisia, Egypt).  Following on \textcite{quinn2002} and \textcite{kropko2013}, we can include the co-integration between the ideological groups $g$ via priors on the $\alpha_{ig}$:
 
