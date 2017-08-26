@@ -210,7 +210,7 @@ out_fit_id <- sampling(code_compile,cores=5,
                     init=start_func)
 saveRDS(out_fit_id,'/Volumes/rmk7xy/out_fit_id.rds')
 
-to_plot <- as.array(out_fit_vb)
+to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
 mcmc_trace(to_plot,pars='gamma1[1]')
