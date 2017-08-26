@@ -98,44 +98,44 @@ combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_coding,
 
 combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
-start_func <- function() {
-  list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
-                   matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
-       gamma1=c(0.5,0.5),
-       gamma2=c(0.5,0.5),
-       ts_sigma=rep(0.25,4),
-       adj=c(1,1),
-       mean_delta=0,
-       mean_beta=0,
-       sigma_beta=1,
-       sigma_delta=1,
-       beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       gamma_par1=0,
-       gamma_par2=0)
-}
+# start_func <- function() {
+#   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
+#                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
+#        gamma1=c(0.5,0.5),
+#        gamma2=c(0.5,0.5),
+#        ts_sigma=rep(0.25,4),
+#        adj=c(1,1),
+#        mean_delta=0,
+#        mean_beta=0,
+#        sigma_beta=1,
+#        sigma_delta=1,
+#        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
+#        delta=rnorm(max(combined_data_small_nomis$cit_ids)),
+#        gamma_par1=0,
+#        gamma_par2=0)
+# }
 
 # run it again, and this time constrain deltas
 
-get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
-
-mean_vals <- apply(get_time,2,mean)
-sd_vals <- apply(get_time,2,sd)
-filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
-  filter(sd_vals<2)
-
-# number to identify
-id_num_high <- 40
-id_num_low <- 4
-top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
-bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
-
-new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
-  as.numeric
-
-new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
-
-combined_data_small_nomis$cit_ids <- new_vals
+# get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
+# 
+# mean_vals <- apply(get_time,2,mean)
+# sd_vals <- apply(get_time,2,sd)
+# filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
+#   filter(sd_vals<2)
+# 
+# # number to identify
+# id_num_high <- 40
+# id_num_low <- 4
+# top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
+# bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
+# 
+# new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
+#   as.numeric
+# 
+# new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
+# 
+# combined_data_small_nomis$cit_ids <- new_vals
 
 # code_compile <- stan_model(file='ord_irt_v1.stan')
 # 
@@ -215,24 +215,24 @@ out_fit_vb <- vb(code_compile,
 
 saveRDS(object = out_fit_vb,'out_fit_vb.rds')
 
-out_fit_id <- sampling(code_compile,cores=5,
-                    data=list(J=max(combined_data_small_nomis$coding_num),
-                              K=max(combined_data_small_nomis$cit_ids),
-                              `T`=max(combined_data_small_nomis$time_three),
-                              N=nrow(combined_data_small_nomis),
-                              C=max(combined_data_small_nomis$nn),
-                              id_num_high=1,
-                              id_num_low=1,
-                              jj=combined_data_small_nomis$coding_num,
-                              kk=combined_data_small_nomis$cit_ids,
-                              tt=combined_data_small_nomis$time_three,
-                              y=as.integer(combined_data_small_nomis$nn),
-                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                              start_vals=c(-.5,-.5,.5,.5),
-                              time_gamma=times$coup[-nrow(times)]),
-                    init=start_func)
-saveRDS(out_fit_id,'out_fit_id.rds')
-
+# out_fit_id <- sampling(code_compile,cores=5,
+#                     data=list(J=max(combined_data_small_nomis$coding_num),
+#                               K=max(combined_data_small_nomis$cit_ids),
+#                               `T`=max(combined_data_small_nomis$time_three),
+#                               N=nrow(combined_data_small_nomis),
+#                               C=max(combined_data_small_nomis$nn),
+#                               id_num_high=1,
+#                               id_num_low=1,
+#                               jj=combined_data_small_nomis$coding_num,
+#                               kk=combined_data_small_nomis$cit_ids,
+#                               tt=combined_data_small_nomis$time_three,
+#                               y=as.integer(combined_data_small_nomis$nn),
+#                               coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+#                               start_vals=c(-.5,-.5,.5,.5),
+#                               time_gamma=times$coup[-nrow(times)]),
+#                     init=start_func)
+# saveRDS(out_fit_id,'out_fit_id.rds')
+# 
 to_plot <- as.array(out_fit_vb)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
@@ -244,9 +244,9 @@ mcmc_trace(to_plot,pars='gamma2[2]')
 mcmc_intervals(to_plot,regex_pars = c('gamma1|gamma2'))
 mcmc_intervals(to_plot,regex_pars = c('alpha'))
 
-gamma1 <- rstan::extract(out_fit,pars='gamma1')$gamma1
+gamma1 <- rstan::extract(out_fit_vb,pars='gamma1')$gamma1
 
-gamma2 <- rstan::extract(out_fit,pars='gamma2')$gamma2
+gamma2 <- rstan::extract(out_fit_vb,pars='gamma2')$gamma2
 
 all_gammas <- data_frame(Islamists=gamma1[,2]-gamma1[,1],
                          Secularists=gamma2[,2]-gamma2[,1]) %>% 
