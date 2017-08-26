@@ -115,44 +115,44 @@ start_func <- function() {
        gamma_par2=0)
 }
 
-code_compile <- stan_model(file='ord_irt_v1.stan')
-
-out_fit <- vb(code_compile,
-                    data=list(J=max(combined_data_small_nomis$coding_num),
-                              K=max(combined_data_small_nomis$cit_ids),
-                              `T`=max(combined_data_small_nomis$time_three),
-                              N=nrow(combined_data_small_nomis),
-                              C=3,
-                              jj=combined_data_small_nomis$coding_num,
-                              kk=combined_data_small_nomis$cit_ids,
-                              tt=combined_data_small_nomis$time_three,
-                              y=as.integer(combined_data_small_nomis$nn),
-                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                              start_vals=c(-1,-1,1,1),
-                              time_gamma=times$coup[-nrow(times)]),
-                    init=start_func)
-
-# run it again, and this time constrain deltas
-
-get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
-
-mean_vals <- apply(get_time,2,mean)
-sd_vals <- apply(get_time,2,sd)
-filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
-  filter(sd_vals<2)
-
-# number to identify
-id_num_high <- 20
-id_num_low <- 4
-top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
-bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
-
-new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
-  as.numeric
-
-new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
-
-combined_data_small_nomis$cit_ids <- new_vals
+# code_compile <- stan_model(file='ord_irt_v1.stan')
+# 
+# out_fit <- vb(code_compile,
+#                     data=list(J=max(combined_data_small_nomis$coding_num),
+#                               K=max(combined_data_small_nomis$cit_ids),
+#                               `T`=max(combined_data_small_nomis$time_three),
+#                               N=nrow(combined_data_small_nomis),
+#                               C=3,
+#                               jj=combined_data_small_nomis$coding_num,
+#                               kk=combined_data_small_nomis$cit_ids,
+#                               tt=combined_data_small_nomis$time_three,
+#                               y=as.integer(combined_data_small_nomis$nn),
+#                               coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+#                               start_vals=c(-1,-1,1,1),
+#                               time_gamma=times$coup[-nrow(times)]),
+#                     init=start_func)
+# 
+# # run it again, and this time constrain deltas
+# 
+# get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
+# 
+# mean_vals <- apply(get_time,2,mean)
+# sd_vals <- apply(get_time,2,sd)
+# filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
+#   filter(sd_vals<2)
+# 
+# # number to identify
+# id_num_high <- 20
+# id_num_low <- 4
+# top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
+# bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
+# 
+# # new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
+# #   as.numeric
+# # 
+# # new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
+# # 
+# # combined_data_small_nomis$cit_ids <- new_vals
 
 start_func <- function() {
   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -161,7 +161,7 @@ start_func <- function() {
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
        adj=c(1,1),
-       mean_delta=0,
+       mean_delta=1,
        mean_beta=0,
        sigma_beta=1,
        sigma_delta=1,
@@ -171,7 +171,7 @@ start_func <- function() {
        gamma_par2=0)
 }
 
-code_compile <- stan_model(file='ord_irt_id.stan')
+code_compile <- stan_model(file='ord_irt_id_v2.stan')
 
 out_fit_vb <- vb(code_compile,
               data=list(J=max(combined_data_small_nomis$coding_num),
@@ -179,14 +179,14 @@ out_fit_vb <- vb(code_compile,
                         `T`=max(combined_data_small_nomis$time_three),
                         N=nrow(combined_data_small_nomis),
                         C=max(combined_data_small_nomis$nn),
-                        id_num_high=id_num_high,
-                        id_num_low=id_num_low,
+                        id_num_high=1,
+                        id_num_low=1,
                         jj=combined_data_small_nomis$coding_num,
                         kk=combined_data_small_nomis$cit_ids,
                         tt=combined_data_small_nomis$time_three,
                         y=as.integer(combined_data_small_nomis$nn),
                         coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                        start_vals=c(-1,-1,1,1),
+                        start_vals=c(-.5,-5,.5,.5),
                         time_gamma=times$coup[-nrow(times)]),
               init=start_func)
 
@@ -198,14 +198,14 @@ out_fit_id <- sampling(code_compile,cores=5,
                               `T`=max(combined_data_small_nomis$time_three),
                               N=nrow(combined_data_small_nomis),
                               C=max(combined_data_small_nomis$nn),
-                              id_num_high=id_num_high,
-                              id_num_low=id_num_low,
+                              id_num_high=1,
+                              id_num_low=1,
                               jj=combined_data_small_nomis$coding_num,
                               kk=combined_data_small_nomis$cit_ids,
                               tt=combined_data_small_nomis$time_three,
                               y=as.integer(combined_data_small_nomis$nn),
                               coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                              start_vals=c(-1,-1,1,1),
+                              start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
 saveRDS(out_fit_id,'out_fit_id.rds')
