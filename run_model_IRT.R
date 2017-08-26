@@ -213,7 +213,7 @@ out_fit_vb <- vb(code_compile,
                         time_gamma=times$coup[-nrow(times)]),
               init=start_func)
 
-saveRDS(object = out_fit_vb,'/Volumes/rmk7xy/out_fit_vb2.rds')
+saveRDS(object = out_fit_vb,paste0('/Volumes/rmk7xy/out_fit_id',lubridate::day(Sys.time()),'-',lubridate::hour(Sys.time()),'.rds'))
 
 out_fit_id <- sampling(code_compile,cores=5,
                     data=list(J=max(combined_data_small_nomis$coding_num),
@@ -231,7 +231,7 @@ out_fit_id <- sampling(code_compile,cores=5,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,'/Volumes/rmk7xy/out_fit_id2.rds')
+saveRDS(out_fit_id,paste0('/Volumes/rmk7xy/out_fit_id',lubridate::day(Sys.time()),'-',lubridate::hour(Sys.time()),'.rds'))
 
 
 to_plot <- as.array(out_fit_id)
