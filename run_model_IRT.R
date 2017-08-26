@@ -186,31 +186,31 @@ out_fit_vb <- vb(code_compile,
                         tt=combined_data_small_nomis$time_three,
                         y=as.integer(combined_data_small_nomis$nn),
                         coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                        start_vals=c(-.5,-5,.5,.5),
+                        start_vals=c(-.5,-.5,.5,.5),
                         time_gamma=times$coup[-nrow(times)]),
               init=start_func)
 
 saveRDS(object = out_fit_vb,'out_fit_vb.rds')
 
-out_fit_id <- sampling(code_compile,cores=5,
-                    data=list(J=max(combined_data_small_nomis$coding_num),
-                              K=max(combined_data_small_nomis$cit_ids),
-                              `T`=max(combined_data_small_nomis$time_three),
-                              N=nrow(combined_data_small_nomis),
-                              C=max(combined_data_small_nomis$nn),
-                              id_num_high=1,
-                              id_num_low=1,
-                              jj=combined_data_small_nomis$coding_num,
-                              kk=combined_data_small_nomis$cit_ids,
-                              tt=combined_data_small_nomis$time_three,
-                              y=as.integer(combined_data_small_nomis$nn),
-                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                              start_vals=c(-.5,-.5,.5,.5),
-                              time_gamma=times$coup[-nrow(times)]),
-                    init=start_func)
-saveRDS(out_fit_id,'out_fit_id.rds')
+# out_fit_id <- sampling(code_compile,cores=5,
+#                     data=list(J=max(combined_data_small_nomis$coding_num),
+#                               K=max(combined_data_small_nomis$cit_ids),
+#                               `T`=max(combined_data_small_nomis$time_three),
+#                               N=nrow(combined_data_small_nomis),
+#                               C=max(combined_data_small_nomis$nn),
+#                               id_num_high=1,
+#                               id_num_low=1,
+#                               jj=combined_data_small_nomis$coding_num,
+#                               kk=combined_data_small_nomis$cit_ids,
+#                               tt=combined_data_small_nomis$time_three,
+#                               y=as.integer(combined_data_small_nomis$nn),
+#                               coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+#                               start_vals=c(-.5,-.5,.5,.5),
+#                               time_gamma=times$coup[-nrow(times)]),
+#                     init=start_func)
+# saveRDS(out_fit_id,'out_fit_id.rds')
 
-to_plot <- as.array(out_fit_id)
+to_plot <- as.array(out_fit_vb)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
 mcmc_trace(to_plot,pars='gamma1[1]')
@@ -244,7 +244,7 @@ summarize(all_gammas,mean_val=mean(Difference),
           upper=quantile(Difference,0.9),
           lower=quantile(Difference,0.1))
 
-get_time <- rstan::extract(out_fit,pars='alpha',permute=T)$alpha
+get_time <- rstan::extract(out_fit_vb,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
@@ -283,13 +283,13 @@ ggsave('arab_ideology.png')
 
 
 deltas <- rstan::extract(out_fit,pars='delta',permuted=T)$delta
-
+betas <- rstan::extract(out_fit,pars='beta',permuted=T)$beta
 apply(deltas,2,mean) %>% hist
-
-lookat <- summary(out_fit_id)
-hist(lookat$summary[,'Rhat'])
-
-non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
-mcmc_trace(to_plot,pars='mean_delta')
-mcmc_trace(to_plot,pars='sigma_delta')
-mcmc_trace(to_plot,pars='lp__')
+apply(betas,2,mean) %>% hist
+# lookat <- summary(out_fit_id)
+# hist(lookat$summary[,'Rhat'])
+# 
+# non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
+ mcmc_trace(to_plot,pars='mean_delta')
+ mcmc_trace(to_plot,pars='sigma_beta')
+# mcmc_trace(to_plot,pars='lp__')
