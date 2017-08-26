@@ -155,8 +155,12 @@ combine_plot <- combine_vec %>% as_data_frame %>%
                            `Egypt Secularists`='t_121'))
   combine_plot %>% ggplot(aes(y=estimates,x=time,linetype=series,colour=series)) +geom_path(size=1) +theme_minimal() +
   geom_vline(xintercept=(t/2),linetype=4) +
-  scale_colour_brewer(palette='Paired') +
-  theme(panel.grid = element_blank())
+  scale_colour_brewer(palette='Paired',name='') +
+    scale_linetype(name='') +
+  theme(panel.grid = element_blank(),
+        legend.position = 'bottom') + 
+    xlab('Time') +
+    ylab('Ideal Points')
 
 code_compile <- stan_model(file='ord_irt_v1.stan')
 

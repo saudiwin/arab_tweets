@@ -178,7 +178,7 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 
 start_func <- function() {
-  list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
+  list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
@@ -237,7 +237,7 @@ saveRDS(out_fit_id,paste0('/Volumes/rmk7xy/out_fit_id',lubridate::day(Sys.time()
 to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
-mcmc_trace(to_plot,pars='gamma1[1]')
+mcmc_trace(to_plot,pars='alpha[50,4]')
 mcmc_trace(to_plot,pars='gamma1[2]')
 mcmc_trace(to_plot,pars='gamma2[1]')
 mcmc_trace(to_plot,pars='gamma2[2]')
@@ -294,6 +294,7 @@ get_time %>%
   scale_linetype(name='')
 
 get_time %>% 
+  filter(time_pts>1) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
@@ -310,8 +311,8 @@ deltas <- rstan::extract(out_fit,pars='delta',permuted=T)$delta
 betas <- rstan::extract(out_fit,pars='beta',permuted=T)$beta
 apply(deltas,2,mean) %>% hist
 apply(betas,2,mean) %>% hist
-# lookat <- summary(out_fit_id)
-# hist(lookat$summary[,'Rhat'])
+lookat <- summary(out_fit_id)
+hist(lookat$summary[,'Rhat'])
 # 
 # non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
  mcmc_trace(to_plot,pars='mean_delta')
