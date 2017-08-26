@@ -213,7 +213,7 @@ out_fit_vb <- vb(code_compile,
                         time_gamma=times$coup[-nrow(times)]),
               init=start_func)
 
-saveRDS(object = out_fit_vb,paste0('/Volumes/rmk7xy/out_fit_id',lubridate::day(Sys.time()),'-',lubridate::hour(Sys.time()),'.rds'))
+saveRDS(object = out_fit_vb,paste0('out_fit_id',lubridate::day(Sys.time()),'-',lubridate::hour(Sys.time()),'.rds'))
 
 out_fit_id <- sampling(code_compile,cores=5,
                     data=list(J=max(combined_data_small_nomis$coding_num),
@@ -231,7 +231,7 @@ out_fit_id <- sampling(code_compile,cores=5,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,paste0('/Volumes/rmk7xy/out_fit_id',lubridate::day(Sys.time()),'-',lubridate::hour(Sys.time()),'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_id',lubridate::day(Sys.time()),'-',lubridate::hour(Sys.time()),'.rds'))
 
 
 to_plot <- as.array(out_fit_id)
@@ -307,14 +307,14 @@ get_time %>%
 ggsave('arab_ideology.png')
 
 
-deltas <- rstan::extract(out_fit,pars='delta',permuted=T)$delta
-betas <- rstan::extract(out_fit,pars='beta',permuted=T)$beta
+deltas <- rstan::extract(out_fit_id,pars='delta',permuted=T)$delta
+betas <- rstan::extract(out_fit_id,pars='beta',permuted=T)$beta
 apply(deltas,2,mean) %>% hist
 apply(betas,2,mean) %>% hist
 lookat <- summary(out_fit_id)
 hist(lookat$summary[,'Rhat'])
 # 
-# non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
- mcmc_trace(to_plot,pars='mean_delta')
+non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
+ mcmc_trace(to_plot,pars='delta[200]')
  mcmc_trace(to_plot,pars='sigma_beta')
 # mcmc_trace(to_plot,pars='lp__')
