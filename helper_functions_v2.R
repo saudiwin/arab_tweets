@@ -113,8 +113,14 @@ get_tweets <- function(t=NULL,
   if(length(test_d)==0 | length(test_d$ids)==0) {
     return(list())
   } else {
-
-    retweeters <- as.character(test_d$ids)
+    
+    retweeters <- try(as.character(test_d$ids))
+    if(class(retweeters)=='try-error') {
+      get_tweets(t=t,
+                 token=token,
+                 current_token=current_token,
+                 re_run=re_run)
+    }
     return(retweeters)
   }
 }
