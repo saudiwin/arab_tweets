@@ -142,7 +142,7 @@ filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>%
   filter(sd_vals<2)
 
 # number to identify
-id_num_high <- 20
+id_num_high <- 40
 id_num_low <- 4
 top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
 bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
