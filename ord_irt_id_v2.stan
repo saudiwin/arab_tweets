@@ -4,6 +4,8 @@ data {
   int<lower=1> N;              // number of observations
   int<lower=1> T;  //number of time points
   int C;
+  int id_num_high;
+  int id_num_low;
   int<lower=1,upper=J> jj[N];  // elite for observation n
   int<lower=1,upper=K> kk[N];  // student for observation n
   int<lower=1> tt[N]; // t for observation N
@@ -22,13 +24,11 @@ parameters {
   // vector<lower=0>[4] ts_sigma;
   vector<lower=0,upper=1>[2] gamma1;
   vector<lower=0,upper=1>[2] gamma2;
-  real mean_delta;
+  real<lower=0> mean_delta;
   //real gamma_par1;
   //real gamma_par2;
   real<lower=0> sigma_beta;
   real<lower=0> sigma_delta;
-  // vector<upper=0>[2] delta_con_low;
-  // vector<lower=0>[2] delta_con_high;
 }
 
 transformed parameters {
@@ -36,12 +36,14 @@ transformed parameters {
   // 
   // beta = append_row(-sum(beta_free),beta_free);
   // vector[K] delta;
-  // delta=append_row(delta_con_low,append_row(delta_con_high,delta_free));
+  // delta=append_row(delta_con_high,append_row(delta_con_low,delta_free));
 }
 
 model {
-  alpha[1,1] ~ normal(start_vals[1],0.01);
-  alpha[1,2:4] ~ normal(0,1);
+  alpha[1,] ~ normal(start_vals,0.01);
+
+// delta_con_low ~ normal(0,3);
+// delta_con_high ~ normal(0,3);
   //gamma_par1 ~ normal(0,2);
   //gamma_par2 ~ normal(0,2);
   gamma1 ~ normal(0,3);
@@ -50,7 +52,7 @@ model {
   for(c in 1:(C-2)) 
     steps[c+1] - steps[c] ~ normal(0,3); 
   adj ~ normal(1,.25);
-  mean_delta ~ normal(0,2);
+  mean_delta ~ normal(0,1);
   sigma_beta ~ exponential(1);
   sigma_delta ~ exponential(1);
 
@@ -67,7 +69,8 @@ model {
   //post-coup gammas
   
   beta ~ normal(0,sigma_beta);          
-  delta ~ normal(mean_delta,sigma_delta);       
+  delta ~ normal(mean_delta,sigma_delta);   
+
   for(n in 1:N)
     y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
 }
