@@ -40,9 +40,9 @@ transformed parameters {
 }
 
 model {
-  //alpha[1,] ~ normal(start_vals,0.01);
+  alpha[1,] ~ normal(start_vals,0.01);
   //alpha[1,2:4] ~ normal(0,1);
-  alpha[1,] ~ normal(0,1);
+  //alpha[1,] ~ normal(0,1);
 // delta_con_low ~ normal(0,3);
 // delta_con_high ~ normal(0,3);
   //gamma_par1 ~ normal(0,2);
@@ -51,11 +51,11 @@ model {
   gamma2 ~ normal(0,3);
   mean_beta ~ normal(0,1);
   for(c in 1:(C-2)) 
-    steps[c+1] - steps[c] ~ normal(0,3); 
-  adj ~ normal(1,.5);
+    steps[c+1] - steps[c] ~ normal(0,5); 
+  adj ~ normal(1,.25);
   mean_delta ~ normal(0,1);
   sigma_beta ~ exponential(1);
-  sigma_delta ~ exponential(1);
+  sigma_delta ~ normal(0,1);
 
   alpha[2:T,1] ~ normal(alpha[1:(T-1),1] - gamma1[time_gamma].*(alpha[1:(T-1),1] - (adj[1])*alpha[1:(T-1),2]),
 .25);
@@ -70,7 +70,7 @@ model {
   //post-coup gammas
   
   beta ~ normal(mean_beta,sigma_beta);          
-  delta ~ normal(mean_delta,sigma_delta);   
+  delta ~ exponential(1);   
 
   for(n in 1:N)
     y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
