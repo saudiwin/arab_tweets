@@ -187,9 +187,9 @@ start_func <- function() {
        mean_delta=1,
        mean_beta=0,
        sigma_beta=1,
-       sigma_delta=1,
+       sigma_delta=.8,
        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       delta=rexp(max(combined_data_small_nomis$cit_ids),1),
        gamma_par1=0,
        gamma_par2=0)
 }
@@ -215,7 +215,7 @@ out_fit_vb <- vb(code_compile,
 
 saveRDS(object = out_fit_vb,'out_fit_vb.rds')
 
-out_fit_id <- sampling(code_compile,cores=5,
+out_fit_id <- sampling(code_compile,cores=4,thin=5,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
