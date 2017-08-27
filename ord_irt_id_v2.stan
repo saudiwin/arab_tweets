@@ -15,7 +15,7 @@ data {
   int time_gamma[T-1];
 }
 parameters {    
-  vector[K] delta;                  // discriminations
+  vector<lower=0>[K] delta;                  // discriminations
   //real mean_beta;     //mean citizen response
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
@@ -24,7 +24,7 @@ parameters {
   // vector<lower=0>[4] ts_sigma;
   vector<lower=0,upper=1>[2] gamma1;
   vector<lower=0,upper=1>[2] gamma2;
-  real<lower=0> mean_delta;
+  real mean_delta;
   //real gamma_par1;
   //real gamma_par2;
   real<lower=0> sigma_beta;
@@ -48,10 +48,10 @@ model {
   //gamma_par2 ~ normal(0,2);
   gamma1 ~ normal(0,3);
   gamma2 ~ normal(0,3);
-  
+  //mean_beta ~ normal(0,1);
   for(c in 1:(C-2)) 
     steps[c+1] - steps[c] ~ normal(0,3); 
-  adj ~ normal(1,.25);
+  adj ~ normal(1,.5);
   mean_delta ~ normal(0,1);
   sigma_beta ~ exponential(.4);
   sigma_delta ~ exponential(.4);
