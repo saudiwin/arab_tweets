@@ -16,7 +16,7 @@ data {
 }
 parameters {    
   vector<lower=0>[K] delta;                  // discriminations
-  //real mean_beta;     //mean citizen response
+  real mean_beta;     //mean citizen response
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
   vector[2] adj;
@@ -40,15 +40,16 @@ transformed parameters {
 }
 
 model {
-  alpha[1,] ~ normal(start_vals,0.01);
-
+  //alpha[1,] ~ normal(start_vals,0.01);
+  //alpha[1,2:4] ~ normal(0,1);
+  alpha[1,] ~ normal(0,1);
 // delta_con_low ~ normal(0,3);
 // delta_con_high ~ normal(0,3);
   //gamma_par1 ~ normal(0,2);
   //gamma_par2 ~ normal(0,2);
   gamma1 ~ normal(0,3);
   gamma2 ~ normal(0,3);
-  //mean_beta ~ normal(0,1);
+  mean_beta ~ normal(0,1);
   for(c in 1:(C-2)) 
     steps[c+1] - steps[c] ~ normal(0,3); 
   adj ~ normal(1,.5);
@@ -68,7 +69,7 @@ model {
   
   //post-coup gammas
   
-  beta ~ normal(0,sigma_beta);          
+  beta ~ normal(mean_beta,sigma_beta);          
   delta ~ normal(mean_delta,sigma_delta);   
 
   for(n in 1:N)
