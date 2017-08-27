@@ -3,6 +3,6 @@
 .RData
 .Ruserdata
 tweets
-.httr-oauth
-.sqlite
-.rds
+*.httr-oauth
+*.sqlite
+*.rds
