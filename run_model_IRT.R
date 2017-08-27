@@ -8,6 +8,7 @@ require(bayesplot)
 require(ggplot2)
 require(readr)
 require(forcats)
+require(googledrive)
 
 #Load in codings
 elite_coding <- read_csv('data/Coding Comparison - Sheet1.csv') %>% 
@@ -212,9 +213,9 @@ out_fit_vb <- vb(code_compile,
                         start_vals=c(-.5,-.5,.5,.5),
                         time_gamma=times$coup[-nrow(times)]),
               init=start_func)
-
-saveRDS(object = out_fit_vb,'out_fit_vb.rds')
-
+this_time <- Sys.time()
+saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
+drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 out_fit_id <- sampling(code_compile,cores=4,thin=5,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
@@ -231,8 +232,8 @@ out_fit_id <- sampling(code_compile,cores=4,thin=5,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,'out_fit_id.rds')
-
+saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
@@ -315,6 +316,6 @@ lookat <- summary(out_fit_id)
 hist(lookat$summary[,'Rhat'])
 # 
 non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
- mcmc_trace(to_plot,pars='mean_delta')
- mcmc_trace(to_plot,pars='sigma_beta')
+ mcmc_trace(to_plot,regex_pars='steps')
+ mcmc_trace(to_plot,pars='delta[7000]')
 # mcmc_trace(to_plot,pars='lp__')
