@@ -103,6 +103,7 @@ get_tweets <- function(t=NULL,
       }
       
     } else {
+      browser()
       get_tweets(t=t,
                  token=token,
                  current_token=current_token,
