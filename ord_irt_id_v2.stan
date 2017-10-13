@@ -71,6 +71,7 @@ model {
   //post-coup gammas
   
   beta ~ normal(0,sigma_beta);          
+
   delta ~ exponential(sigma_delta);   
 
   for(n in 1:N)
