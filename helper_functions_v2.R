@@ -109,6 +109,13 @@ get_tweets <- function(t=NULL,
                  re_run=re_run)
     }
   }
+  
+  if(is.null(test_d)) {
+    get_tweets(t=t,
+               token=token,
+               current_token=current_token,
+               re_run=re_run)
+  }
 
   if(length(test_d)==0 | length(test_d$ids)==0) {
     return(list())

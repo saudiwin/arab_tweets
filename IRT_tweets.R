@@ -207,9 +207,10 @@ out_fit <- sampling(code_compile,
                       cores=5,
                     control=list(max_treedepth=10),
                     init=start_func,
-                    chains=5)
+                    chains=5,
+                    seed=6651)
 to_plot <- as.array(out_fit)
-mcmc_trace(to_plot,pars='mean_delta')
+mcmc_trace(to_plot,pars='sigma_delta')
 mcmc_trace(to_plot,pars='adj[2]')
 adj_est <- as.array(out_fit,'adj')
 mcmc_recover_intervals(x=adj_est,true = c(adj1,adj2))
@@ -251,7 +252,13 @@ get_time %>%
   guides(linetype=F) +
   geom_path(data=orig_vals,aes(y=out_vals,x=time_pts,linetype=Series),size=1) +
   facet_wrap(~Series)
+<<<<<<< HEAD
 ggsave('true_estimated.png')
+=======
+
+ggsave('sim_values_real.png')
+
+>>>>>>> 3d1e8e9f8fc6ffe56e4272de5cd74f2018d01d08
 est_alpha <- apply(rstan::extract(out_fit,pars='alpha',permute=T)$alpha,
                    c(2,3),
                    mean)

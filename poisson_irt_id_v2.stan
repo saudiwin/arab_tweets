@@ -70,10 +70,10 @@ model {
   
   //post-coup gammas
   
-  beta ~ normal(0,sigma_beta);          
-
-  delta ~ exponential(sigma_delta);   
+  beta ~ normal(0,5);          
+  delta ~ exponential(1);   
 
   for(n in 1:N)
-    y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
+    //y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
+    y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }
