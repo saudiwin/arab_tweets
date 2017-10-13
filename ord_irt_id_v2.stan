@@ -70,7 +70,7 @@ model {
   //post-coup gammas
   
   beta ~ normal(mean_beta,sigma_beta);          
-  delta ~ exponential(1);   
+  delta ~ exponential(sigma_delta);   
 
   for(n in 1:N)
     y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
