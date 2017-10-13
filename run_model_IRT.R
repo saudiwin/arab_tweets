@@ -181,12 +181,13 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 start_func <- function() {
   list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
-       gamma1=c(0.5,0.5),
-       gamma2=c(0.5,0.5),
+       gamma1=0.5,
+       gamma2=0.5,
        ts_sigma=rep(0.25,4),
-       adj=c(1,1),
+       adj1=c(1,1),
+       adj2=c(1,1),
        mean_delta=1,
-       mean_beta=0,
+       mean_beta=1,
        sigma_beta=1,
        sigma_delta=.8,
        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
@@ -195,7 +196,7 @@ start_func <- function() {
        gamma_par2=0)
 }
 
-code_compile <- stan_model(file='ord_irt_id_v2.stan')
+code_compile <- stan_model(file='ord_irt_id_v3.stan')
 
 out_fit_vb <- vb(code_compile,
               data=list(J=max(combined_data_small_nomis$coding_num),
