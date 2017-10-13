@@ -161,6 +161,8 @@ combine_plot <- combine_vec %>% as_data_frame %>%
         legend.position = 'bottom') + 
     xlab('Time') +
     ylab('Ideal Points')
+  
+  ggsave('ecm_example.png')
 
 code_compile <- stan_model(file='ord_irt_id_v2.stan')
 
@@ -196,6 +198,8 @@ out_fit <- sampling(code_compile,
                               jj=combine_ids[,2],
                               kk=combine_ids[,3],
                               tt=combine_ids[,1],
+                              id_num_high=1,
+                              id_num_low=1,
                       y=as.integer(gen_out),
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2),
@@ -247,7 +251,7 @@ get_time %>%
   guides(linetype=F) +
   geom_path(data=orig_vals,aes(y=out_vals,x=time_pts,linetype=Series),size=1) +
   facet_wrap(~Series)
-
+ggsave('true_estimated.png')
 est_alpha <- apply(rstan::extract(out_fit,pars='alpha',permute=T)$alpha,
                    c(2,3),
                    mean)
