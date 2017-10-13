@@ -30,7 +30,7 @@ cit <- 50
 cit_pt <- rnorm(n=cit)
 # cit_pt <- c(-sum(cit_pt),cit_pt)
 # Discrim points
-cit_dis <- rnorm(n=cit)
+cit_dis <- rexp(cit,2.5)
 #cit_dis <- c(-1,1,cit_dis)
 
 # Generate side/elite ideal points
@@ -162,7 +162,7 @@ combine_plot <- combine_vec %>% as_data_frame %>%
     xlab('Time') +
     ylab('Ideal Points')
 
-code_compile <- stan_model(file='ord_irt_v1.stan')
+code_compile <- stan_model(file='ord_irt_id_v2.stan')
 
 # need to create time variable for gamma
 
@@ -177,12 +177,12 @@ start_func <- function() {
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,sides),
        adj=c(1,1),
-       mean_delta=0,
+       mean_delta=1,
        mean_beta=0,
        sigma_beta=1,
        sigma_delta=1,
        beta=rnorm(n=cit),
-       delta=rnorm(cit),
+       delta=rexp(n=cit,2.5),
        gamma_par1=0,
        gamma_par2=0)
 }
@@ -200,17 +200,18 @@ out_fit <- sampling(code_compile,
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
-                      cores=4,
+                      cores=5,
                     control=list(max_treedepth=10),
                     init=start_func,
-                    chains=8)
+                    chains=5,
+                    seed=6651)
 to_plot <- as.array(out_fit)
-mcmc_trace(to_plot,pars='adj[1]')
+mcmc_trace(to_plot,pars='sigma_delta')
 mcmc_trace(to_plot,pars='adj[2]')
 adj_est <- as.array(out_fit,'adj')
 mcmc_recover_intervals(x=adj_est,true = c(adj1,adj2))
 mcmc_recover_intervals(x=as.array(out_fit,c('gamma1','gamma2')),true = c(gamma1,gamma2,gamma3,gamma4))
-mcmc_recover_intervals(x=as.array(out_fit,'alpha'),true = c(combine_vec)*-1+2)
+mcmc_recover_intervals(x=as.array(out_fit,'alpha'),true = c(combine_vec))
 
 get_time <- rstan::extract(out_fit,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]
@@ -242,11 +243,13 @@ orig_vals <- combine_vec %>% as_data_frame %>%
 
 get_time %>% 
   ggplot(aes(y=out_vals,x=time_pts,linetype=Series)) +
-  stat_smooth() + theme_minimal() +
+  stat_summary(fun.data = 'median_hilow',colour='red',geom='ribbon',alpha=0.5) + theme_minimal() +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
   guides(linetype=F) +
   geom_path(data=orig_vals,aes(y=out_vals,x=time_pts,linetype=Series),size=1) +
   facet_wrap(~Series)
+
+ggsave('sim_values_real.png')
 
 est_alpha <- apply(rstan::extract(out_fit,pars='alpha',permute=T)$alpha,
                    c(2,3),

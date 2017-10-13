@@ -11,20 +11,27 @@ require(forcats)
 require(googledrive)
 
 #Load in codings
-elite_coding <- read_csv('data/Coding Comparison - Sheet1.csv') %>% 
-  mutate(final_code=coalesce(`Dana Coding`,
-                             `Hana Coding`)) %>% 
-  separate(final_code,into=c('Religion','Regime'),sep='-') %>% 
-  mutate(country=c(rep('Tunisia',64),
-                   rep('Egypt',n()-64)),
-         coding=paste0(Religion,'_',country)) %>% 
-  filter(!is.na(Religion)) %>% 
-  mutate(coding_num=as.numeric(factor(coding)),
+# elite_coding <- read_csv('data/Coding Comparison - Sheet1.csv') %>%
+#   mutate(final_code=coalesce(`Dana Coding`,
+#                              `Hana Coding`)) %>%
+#   separate(final_code,into=c('Religion','Regime'),sep='-') %>%
+#   mutate(country=c(rep('Tunisia',64),
+#                    rep('Egypt',n()-64)),
+#          coding=paste0(Religion,'_',country)) %>%
+#   filter(!is.na(Religion)) %>%
+#   mutate(coding_num=as.numeric(factor(coding)),
+#          Username=tolower(Username))
+
+# Load in revised codings
+
+elite_codings2 <- read_csv('data/check_complete.csv') %>% 
+  mutate(coding=paste0(coding,'_',Country),
+         coding_num=as.numeric(factor(coding)),
          Username=tolower(Username))
 
 #SQLite databases
 all_tunis <- dbConnect(SQLite(),'data/tunis_tweets.sqlite')
-all_egypt <- dbConnect(SQLite(),'data/egypt_tweets_small.sqlite')
+all_egypt <- dbConnect(SQLite(),'data/egypt_tweets.sqlite')
 
 tunis_rts <- dbReadTable(all_tunis,'unique_rts')
 egypt_rts <- dbReadTable(all_egypt,'unique_rts')
@@ -196,7 +203,11 @@ start_func <- function() {
        gamma_par2=0)
 }
 
+<<<<<<< HEAD
 code_compile <- stan_model(file='ord_irt_id_v3.stan')
+=======
+code_compile <- stan_model(file='poisson_irt_id_v2.stan')
+>>>>>>> 3d1e8e9f8fc6ffe56e4272de5cd74f2018d01d08
 
 out_fit_vb <- vb(code_compile,
               data=list(J=max(combined_data_small_nomis$coding_num),
@@ -240,8 +251,8 @@ to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
 mcmc_trace(to_plot,pars='alpha[50,4]')
-mcmc_trace(to_plot,pars='gamma1[2]')
-mcmc_trace(to_plot,pars='gamma2[1]')
+mcmc_trace(to_plot,pars='sigma_beta')
+mcmc_trace(to_plot,pars='sigma_delta')
 mcmc_trace(to_plot,pars='gamma2[2]')
 
 mcmc_intervals(to_plot,regex_pars = c('gamma1|gamma2'))
@@ -296,9 +307,8 @@ get_time %>%
   scale_linetype(name='')
 
 get_time %>% 
-  filter(time_pts>1) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
+  #stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
   scale_colour_brewer(palette='paired',name='') + 
