@@ -100,7 +100,7 @@ time2 <- Sys.time()
 
 time3 <- Sys.time()
 
-walk(166:max(all_egypt_rts$days),all_time_rts,token=twitter_tokens,city=city,
+walk(364:max(all_egypt_rts$days),all_time_rts,token=twitter_tokens,city=city,
       sql_db='data/egypt_tweets.sqlite',
       dataset=all_egypt_rts)
 time4 <- Sys.time()
