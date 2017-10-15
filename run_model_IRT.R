@@ -97,7 +97,7 @@ combined_data_small <- group_by(combined_data,
 
 # add in codings
 
-combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_coding,
+combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_codings2,
                                  by=c('username'='Username')) %>% 
   mutate(user_ids=as.numeric(factor(username)),
          cit_ids=as.numeric(factor(rt_ids)))
@@ -188,8 +188,8 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 start_func <- function() {
   list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
-       gamma1=0.5,
-       gamma2=0.5,
+       gamma1=c(0.5,0.5),
+       gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
        adj1=c(1,1),
        adj2=c(1,1),
@@ -203,32 +203,31 @@ start_func <- function() {
        gamma_par2=0)
 }
 
-<<<<<<< HEAD
-code_compile <- stan_model(file='ord_irt_id_v3.stan')
-=======
-code_compile <- stan_model(file='poisson_irt_id_v2.stan')
->>>>>>> 3d1e8e9f8fc6ffe56e4272de5cd74f2018d01d08
 
-out_fit_vb <- vb(code_compile,
-              data=list(J=max(combined_data_small_nomis$coding_num),
-                        K=max(combined_data_small_nomis$cit_ids),
-                        `T`=max(combined_data_small_nomis$time_three),
-                        N=nrow(combined_data_small_nomis),
-                        C=max(combined_data_small_nomis$nn),
-                        id_num_high=1,
-                        id_num_low=1,
-                        jj=combined_data_small_nomis$coding_num,
-                        kk=combined_data_small_nomis$cit_ids,
-                        tt=combined_data_small_nomis$time_three,
-                        y=as.integer(combined_data_small_nomis$nn),
-                        coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                        start_vals=c(-.5,-.5,.5,.5),
-                        time_gamma=times$coup[-nrow(times)]),
-              init=start_func)
-this_time <- Sys.time()
-saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
-drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
-out_fit_id <- sampling(code_compile,cores=4,thin=5,
+code_compile <- stan_model(file='ord_irt_id_v2.stan')
+
+
+# out_fit_vb <- vb(code_compile,
+#               data=list(J=max(combined_data_small_nomis$coding_num),
+#                         K=max(combined_data_small_nomis$cit_ids),
+#                         `T`=max(combined_data_small_nomis$time_three),
+#                         N=nrow(combined_data_small_nomis),
+#                         C=max(combined_data_small_nomis$nn),
+#                         id_num_high=1,
+#                         id_num_low=1,
+#                         jj=combined_data_small_nomis$coding_num,
+#                         kk=combined_data_small_nomis$cit_ids,
+#                         tt=combined_data_small_nomis$time_three,
+#                         y=as.integer(combined_data_small_nomis$nn),
+#                         coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+#                         start_vals=c(-.5,-.5,.5,.5),
+#                         time_gamma=times$coup[-nrow(times)]),
+#               init=start_func)
+# this_time <- Sys.time()
+# saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
+# drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
+# cores=4,thin=5,
+out_fit_id <- vb(code_compile,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
@@ -244,8 +243,8 @@ out_fit_id <- sampling(code_compile,cores=4,thin=5,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
-drive_upload(paste0('out_fit_id_',this_time,'.rds'))
+# saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+# drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
