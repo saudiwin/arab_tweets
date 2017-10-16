@@ -27,7 +27,8 @@ require(googledrive)
 elite_codings2 <- read_csv('data/check_complete.csv') %>% 
   mutate(coding=paste0(coding,'_',Country),
          coding_num=as.numeric(factor(coding)),
-         Username=tolower(Username))
+         Username=tolower(Username)) %>% 
+  filter(person=='dana')
 
 #SQLite databases
 all_tunis <- dbConnect(SQLite(),'data/tunis_tweets.sqlite')
@@ -105,6 +106,11 @@ combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_codings2
 # drop missing
 
 combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
+
+# drop the random six in the dataset
+
+combined_data_small_nomis <- filter(combined_data_small_nomis,
+                                    nn<6)
 
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -280,24 +286,21 @@ summarize(all_gammas,mean_val=mean(Difference),
           upper=quantile(Difference,0.9),
           lower=quantile(Difference,0.1))
 
-get_time <- rstan::extract(out_fit_vb,pars='alpha',permute=T)$alpha
+get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
   bind_rows(.id='Series') %>% 
   mutate(Series=factor(Series),
-         Series=fct_recode(Series,`Tunisia Islamists`='1',
-                           `Egyptian Islamists`='2',
-                           `Tunisian Secularists`='3',
-                           `Egyptian Secularists`='4')) %>% 
+         Series=fct_recode(Series,`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4')) %>% 
   gather(time_pts,out_vals,-Series) %>% 
   mutate(time_pts=as.numeric(factor(time_pts)))
 
-return_cl <- function(var_out) {
-  data_frame()
-}
-
 get_time %>% 
+  filter(time_pts<93) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_smooth() + theme_minimal() +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
@@ -306,8 +309,9 @@ get_time %>%
   scale_linetype(name='')
 
 get_time %>% 
+  filter(time_pts<93) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
-  #stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
+  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
   scale_colour_brewer(palette='paired',name='') + 
