@@ -27,7 +27,8 @@ require(googledrive)
 elite_codings2 <- read_csv('data/check_complete.csv') %>% 
   mutate(coding=paste0(coding,'_',Country),
          coding_num=as.numeric(factor(coding)),
-         Username=tolower(Username))
+         Username=tolower(Username)) %>% 
+  filter(person=='dana')
 
 #SQLite databases
 all_tunis <- dbConnect(SQLite(),'data/tunis_tweets.sqlite')
@@ -97,7 +98,7 @@ combined_data_small <- group_by(combined_data,
 
 # add in codings
 
-combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_coding,
+combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_codings2,
                                  by=c('username'='Username')) %>% 
   mutate(user_ids=as.numeric(factor(username)),
          cit_ids=as.numeric(factor(rt_ids)))
@@ -105,6 +106,11 @@ combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_coding,
 # drop missing
 
 combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
+
+# drop the random six in the dataset
+
+combined_data_small_nomis <- filter(combined_data_small_nomis,
+                                    nn<6)
 
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -191,7 +197,8 @@ start_func <- function() {
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
-       adj=c(1,1),
+       adj1=c(1,1),
+       adj2=c(1,1),
        mean_delta=1,
        mean_beta=1,
        sigma_beta=1,
@@ -202,28 +209,31 @@ start_func <- function() {
        gamma_par2=0)
 }
 
-code_compile <- stan_model(file='poisson_irt_id_v2.stan')
 
-out_fit_vb <- vb(code_compile,
-              data=list(J=max(combined_data_small_nomis$coding_num),
-                        K=max(combined_data_small_nomis$cit_ids),
-                        `T`=max(combined_data_small_nomis$time_three),
-                        N=nrow(combined_data_small_nomis),
-                        C=max(combined_data_small_nomis$nn),
-                        id_num_high=1,
-                        id_num_low=1,
-                        jj=combined_data_small_nomis$coding_num,
-                        kk=combined_data_small_nomis$cit_ids,
-                        tt=combined_data_small_nomis$time_three,
-                        y=as.integer(combined_data_small_nomis$nn),
-                        coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                        start_vals=c(-.5,-.5,.5,.5),
-                        time_gamma=times$coup[-nrow(times)]),
-              init=start_func)
-this_time <- Sys.time()
-saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
-drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
-out_fit_id <- sampling(code_compile,cores=4,thin=5,
+code_compile <- stan_model(file='ord_irt_id_v2.stan')
+
+
+# out_fit_vb <- vb(code_compile,
+#               data=list(J=max(combined_data_small_nomis$coding_num),
+#                         K=max(combined_data_small_nomis$cit_ids),
+#                         `T`=max(combined_data_small_nomis$time_three),
+#                         N=nrow(combined_data_small_nomis),
+#                         C=max(combined_data_small_nomis$nn),
+#                         id_num_high=1,
+#                         id_num_low=1,
+#                         jj=combined_data_small_nomis$coding_num,
+#                         kk=combined_data_small_nomis$cit_ids,
+#                         tt=combined_data_small_nomis$time_three,
+#                         y=as.integer(combined_data_small_nomis$nn),
+#                         coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+#                         start_vals=c(-.5,-.5,.5,.5),
+#                         time_gamma=times$coup[-nrow(times)]),
+#               init=start_func)
+# this_time <- Sys.time()
+# saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
+# drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
+# cores=4,thin=5,
+out_fit_id <- vb(code_compile,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
@@ -239,8 +249,8 @@ out_fit_id <- sampling(code_compile,cores=4,thin=5,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
-drive_upload(paste0('out_fit_id_',this_time,'.rds'))
+# saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+# drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
@@ -276,24 +286,21 @@ summarize(all_gammas,mean_val=mean(Difference),
           upper=quantile(Difference,0.9),
           lower=quantile(Difference,0.1))
 
-get_time <- rstan::extract(out_fit_vb,pars='alpha',permute=T)$alpha
+get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
   bind_rows(.id='Series') %>% 
   mutate(Series=factor(Series),
-         Series=fct_recode(Series,`Tunisia Islamists`='1',
-                           `Egyptian Islamists`='2',
-                           `Tunisian Secularists`='3',
-                           `Egyptian Secularists`='4')) %>% 
+         Series=fct_recode(Series,`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4')) %>% 
   gather(time_pts,out_vals,-Series) %>% 
   mutate(time_pts=as.numeric(factor(time_pts)))
 
-return_cl <- function(var_out) {
-  data_frame()
-}
-
 get_time %>% 
+  filter(time_pts<93) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_smooth() + theme_minimal() +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
@@ -302,6 +309,7 @@ get_time %>%
   scale_linetype(name='')
 
 get_time %>% 
+  filter(time_pts<93) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +

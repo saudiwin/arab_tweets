@@ -66,10 +66,10 @@ get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>%
   lapply(as_data_frame) %>% 
   bind_rows(.id='Series') %>% 
   mutate(Series=factor(Series),
-         Series=fct_recode(Series,`Tunisia Islamists`='1',
-                           `Egypt Islamists`='2',
-                           `Tunisia Secularists`='3',
-                           `Egypt Secularists`='4')) %>% 
+         Series=fct_recode(Series,`Tunisia Islamists`='2',
+                           `Egypt Islamists`='1',
+                           `Tunisia Secularists`='4',
+                           `Egypt Secularists`='3')) %>% 
   gather(time_pts,out_vals,-Series) %>% 
   mutate(time_pts=as.numeric(factor(time_pts))) %>% 
   separate(Series,into=c('Country','Religion'))
