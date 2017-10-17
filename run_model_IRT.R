@@ -303,7 +303,7 @@ get_time %>%
 
 get_time %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
-  #stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
+  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
   scale_colour_brewer(palette='paired',name='') + 
