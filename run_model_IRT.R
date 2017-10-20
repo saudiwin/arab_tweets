@@ -112,6 +112,22 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 combined_data_small_nomis <- filter(combined_data_small_nomis,
                                     nn<6)
 
+# let's look at histograms of tweets
+
+lookat <- group_by(combined_data_small_nomis,time_three,coding_num) %>% count %>% 
+  mutate(Series=recode(as.character(coding_num),`1`='Islamist Egypt',
+                           `2`='Islamist Tunisia',
+                           `3`='Secularist Egypt',
+                           `4`='Secularist Tunisia'))
+
+ggplot(lookat,aes(y=n,x=time_three)) + geom_path() + theme_minimal() + facet_wrap(~Series,scales='free_y') +
+  ylab('') + xlab('') +
+  scale_x_continuous(breaks=c(6,32,75),
+                     labels=c('2013-03-31','2013-07-02','2013-11-08')) +
+  geom_vline(aes(xintercept=32),linetype=3)
+
+ggsave('retweets_counts.png')
+
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
 #                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
@@ -233,7 +249,7 @@ code_compile <- stan_model(file='ord_irt_id_v2.stan')
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-out_fit_id <- vb(code_compile,
+out_fit_id <- sampling(code_compile,chains=4,cores=4,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
@@ -249,8 +265,8 @@ out_fit_id <- vb(code_compile,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-# saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
-# drive_upload(paste0('out_fit_id_',this_time,'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
