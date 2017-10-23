@@ -109,8 +109,8 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
-combined_data_small_nomis <- filter(combined_data_small_nomis,
-                                    nn<6)
+combined_data_small_nomis <- mutate(combined_data_small_nomis,
+                                    nn=if_else(nn==6,4L,nn))
 
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -233,7 +233,7 @@ code_compile <- stan_model(file='ord_irt_id_v2.stan')
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-out_fit_id <- vb(code_compile,
+out_fit_id <- sampling(code_compile,cores=4,chains=4,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
