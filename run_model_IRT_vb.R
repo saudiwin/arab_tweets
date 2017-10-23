@@ -109,8 +109,8 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
-combined_data_small_nomis <- mutate(combined_data_small_nomis,
-                                    nn=if_else(nn==6,4L,nn))
+combined_data_small_nomis <- filter(combined_data_small_nomis,
+                                    nn<6)
 
 # let's look at histograms of tweets
 
@@ -256,11 +256,7 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-<<<<<<< HEAD
-out_fit_id <- sampling(code_compile,cores=4,chains=4,
-=======
-out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
->>>>>>> 7518a6418b789fb80de49ed71460df5d7ede70f5
+out_fit_id <- vb(code_compile,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
@@ -276,7 +272,7 @@ out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_vb_',this_time,'.rds'))
 #drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
@@ -327,7 +323,7 @@ get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>%
   mutate(time_pts=as.numeric(factor(time_pts)))
 
 get_time %>% 
-  filter(time_pts<93) %>% 
+  filter(time_pts<92) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_smooth() + theme_minimal() +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
@@ -336,7 +332,7 @@ get_time %>%
   scale_linetype(name='')
 
 get_time %>% 
-  filter(time_pts<93) %>% 
+  filter(time_pts<92) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +

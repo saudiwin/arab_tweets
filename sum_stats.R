@@ -4,20 +4,20 @@ require(dplyr)
 require(ggplot2)
 require(rstan)
 require(shinystan)
-require(ggjoy)
+require(ggridges)
 require(tidyr)
 require(bayesplot)
 require(purrr)
 require(forcats)
-use_model <- readRDS('data/out_fit_id_2017-08-28 16-53-46.rds')
+#out_fit_id <- readRDS('data/out_fit_id_2017-08-28 16-53-46.rds')
 
-to_plot <- as.array(use_model)
+# to_plot <- as.array(out_fit_id)
+# 
+# mcmc_intervals(to_plot,regex_pars='gamma')
 
-mcmc_intervals(to_plot,regex_pars='gamma')
+gamma1 <- rstan::extract(out_fit_id,pars='gamma1')$gamma1
 
-gamma1 <- rstan::extract(use_model,pars='gamma1')$gamma1
-
-gamma2 <- rstan::extract(use_model,pars='gamma2')$gamma2
+gamma2 <- rstan::extract(out_fit_id,pars='gamma2')$gamma2
 
 
 all_gammas <- data_frame(Islamists=gamma1[,2]-gamma1[,1],
@@ -43,10 +43,10 @@ ggsave('gamma_diff.png')
 
 filter(all_gammas,!( `Ideological\nPairing` %in% c('Islamists','Secularists'))) %>% 
   ggplot(aes(x=Difference,y=`Ideological\nPairing`,fill=`Ideological\nPairing`)) +
-  geom_joy(colour=NA,rel_min_height = 0.005) +
+    geom_density_ridges(colour=NA) +
   scale_y_discrete(expand = c(0.01, 0)) +
   scale_x_continuous(expand = c(0.01, 0)) +
-  theme_joy() +
+  theme_ridges() +
   scale_fill_brewer(palette='Paired') +
   xlab('') +
   ylab('') +
@@ -60,7 +60,7 @@ summarize(all_gammas,mean_val=mean(Difference),
           upper=quantile(Difference,0.9),
           lower=quantile(Difference,0.1))
 
-get_time_raw <- rstan::extract(use_model,pars='alpha',permute=T)$alpha
+get_time_raw <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time_raw[sample(1:nrow(get_time_raw),101),,]
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
@@ -112,7 +112,7 @@ get_time %>%
 ggsave('country_coint.png')
 
 # Let's do some impulse response functions
-adj <- rstan::extract(use_model,pars='adj')$adj
+adj <- rstan::extract(out_fit_id,pars='adj')$adj
 
 irf <- function(time=1,shock=0.5,gamma=NULL,adj=NULL,num=1,y_1=0,x_1=0,total_t=10,
                 old_output=NULL) {
@@ -229,10 +229,10 @@ ggsave('irf_tunisia.png')
 
 # try the same thing while varying the adjustment parameter
 
-use_model <- readRDS('data/out_fit_id_2017-08-28 17-20-18.rds')
+out_fit_id <- readRDS('data/out_fit_id_2017-08-28 17-20-18.rds')
 
-adj1 <- rstan::extract(use_model,pars='adj1')$adj1
-adj2 <- rstan::extract(use_model,pars='adj2')$adj2
+adj1 <- rstan::extract(out_fit_id,pars='adj1')$adj1
+adj2 <- rstan::extract(out_fit_id,pars='adj2')$adj2
 
 all_adjs <- data_frame(Islamists=adj1[,2]-adj1[,1],
                          Secularists=adj2[,2]-adj2[,1],
@@ -271,8 +271,8 @@ ggsave('adj_joy.png')
 
 
 
-gamma1 <-  rstan::extract(use_model,pars='gamma1')$gamma1
-gamma2 <-  rstan::extract(use_model,pars='gamma2')$gamma2
+gamma1 <-  rstan::extract(out_fit_id,pars='gamma1')$gamma1
+gamma2 <-  rstan::extract(out_fit_id,pars='gamma2')$gamma2
 
 is_prec1 <- irf(gamma=gamma1,
                 adj=adj1[,1])
