@@ -4,7 +4,7 @@ require(dplyr)
 require(ggplot2)
 require(rstan)
 require(shinystan)
-require(ggjoy)
+require(ggridges)
 require(tidyr)
 require(bayesplot)
 require(purrr)
@@ -43,10 +43,10 @@ ggsave('gamma_diff.png')
 
 filter(all_gammas,!( `Ideological\nPairing` %in% c('Islamists','Secularists'))) %>% 
   ggplot(aes(x=Difference,y=`Ideological\nPairing`,fill=`Ideological\nPairing`)) +
-  geom_joy(colour=NA,rel_min_height = 0.005) +
+    geom_density_ridges(colour=NA) +
   scale_y_discrete(expand = c(0.01, 0)) +
   scale_x_continuous(expand = c(0.01, 0)) +
-  theme_joy() +
+  theme_ridges() +
   scale_fill_brewer(palette='Paired') +
   xlab('') +
   ylab('') +
