@@ -60,7 +60,7 @@ summarize(all_gammas,mean_val=mean(Difference),
           upper=quantile(Difference,0.9),
           lower=quantile(Difference,0.1))
 
-get_time_raw <- rstan::extract(out_fit_id,pars='alpha_d2',permute=T)$alpha_d2
+get_time_raw <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time_raw[sample(1:nrow(get_time_raw),101),,]
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
@@ -246,7 +246,7 @@ all_adjs <- data_frame(Islamists=adj1[,2]-adj1[,1],
 
 filter(all_adjs, `Ideological\nPairing` %in% c('Islamists','Secularists')) %>% 
   ggplot(aes(x=Difference)) +
-  geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha_d2=0.5,adjust=0.5) +
+  geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha=0.5,adjust=0.5) +
   theme_minimal() +
   theme(panel.grid = element_blank()) +
   xlab('Co-integration Vector Difference') +
