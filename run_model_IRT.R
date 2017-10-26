@@ -88,20 +88,12 @@ combined_data <- left_join(combined_data,
 
 times <- distinct(times,time_three,coup)
 
-combined_data_small <- group_by(combined_data,
-                                coup,
-                                time_three,
-                                username,
-                                rt_ids) %>% count
-
-
-
-# add in codings
-
-combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_codings2,
+combined_data_small <- left_join(combined_data,
+                                 elite_codings2,
                                  by=c('username'='Username')) %>% 
-  mutate(user_ids=as.numeric(factor(username)),
-         cit_ids=as.numeric(factor(rt_ids)))
+                                   group_by(time_three,
+                                coding_num,
+                                rt_ids,coup) %>% tally
 
 # drop missing
 
@@ -109,8 +101,13 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
+<<<<<<< HEAD
+# combined_data_small_nomis <- filter(combined_data_small_nomis,
+#                                     nn<6)
+=======
 combined_data_small_nomis <- mutate(combined_data_small_nomis,
                                     nn=if_else(nn==6,4L,nn))
+>>>>>>> ae9f259a614b7d64ee3239c5faeaab9950090894
 
 # let's look at histograms of tweets
 
@@ -134,6 +131,22 @@ lookat_c_ret <- group_by(combined_data_small_nomis,time_three,coding_num) %>% su
                                                                                         twot=sum(nn==2),
                                                                                         threet=sum(nn==3),
                                                                                         fourt=sum(nn==4))
+
+lookat_cit_ratio <- group_by(combined_data_small_nomis,rt_ids,coding_num) %>% tally %>% 
+  group_by(rt_ids) %>% 
+  mutate(prop_group=n/sum(n))
+
+lookat_cit_top <- lookat_cit_ratio %>% 
+  filter(prop_group>.8) %>% 
+  group_by(coding_num) %>% 
+  top_n(2,n)
+
+lookat_cit_patriot <- lookat_cit_ratio %>% 
+  filter(prop_group==1)
+
+combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
+  ungroup() %>% 
+  mutate(cit_ids=as.numeric(factor(rt_ids)))
 
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -226,14 +239,15 @@ start_func <- function() {
        mean_beta=1,
        sigma_beta=1,
        sigma_delta=.8,
+       shape=1,
        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta=rexp(max(combined_data_small_nomis$cit_ids),1),
+       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
        gamma_par1=0,
        gamma_par2=0)
 }
 
 
-code_compile <- stan_model(file='ord_irt_id_v2.stan')
+code_compile <- stan_model(file='nb_irt_id_v3.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -256,8 +270,20 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
+<<<<<<< HEAD
 
 out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
+=======
+<<<<<<< HEAD
+out_fit_id <- vb(code_compile,
+=======
+<<<<<<< HEAD
+out_fit_id <- sampling(code_compile,cores=4,chains=4,
+=======
+out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
+>>>>>>> 7518a6418b789fb80de49ed71460df5d7ede70f5
+>>>>>>> ae9f259a614b7d64ee3239c5faeaab9950090894
+>>>>>>> 3022a00e39860ceb4685becaaa809c734ae00829
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),

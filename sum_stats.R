@@ -76,7 +76,7 @@ get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>%
 
 
 get_time %>% 
-  filter(time_pts>1) %>% 
+  filter(time_pts>0) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
@@ -90,7 +90,7 @@ get_time %>%
 ggsave('arab_ideology.png')
 
 get_time %>% 
-  filter(time_pts>1) %>% 
+  filter(time_pts>0) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Country)) + theme_minimal() +
   facet_wrap(~Religion,ncol=1,scales='free_y') +
