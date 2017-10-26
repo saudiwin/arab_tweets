@@ -101,8 +101,13 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
+<<<<<<< HEAD
 # combined_data_small_nomis <- filter(combined_data_small_nomis,
 #                                     nn<6)
+=======
+combined_data_small_nomis <- mutate(combined_data_small_nomis,
+                                    nn=if_else(nn==6,4L,nn))
+>>>>>>> ae9f259a614b7d64ee3239c5faeaab9950090894
 
 # let's look at histograms of tweets
 
@@ -265,7 +270,15 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
+<<<<<<< HEAD
 out_fit_id <- vb(code_compile,
+=======
+<<<<<<< HEAD
+out_fit_id <- sampling(code_compile,cores=4,chains=4,
+=======
+out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
+>>>>>>> 7518a6418b789fb80de49ed71460df5d7ede70f5
+>>>>>>> ae9f259a614b7d64ee3239c5faeaab9950090894
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
