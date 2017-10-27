@@ -101,13 +101,8 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
-<<<<<<< HEAD
 # combined_data_small_nomis <- filter(combined_data_small_nomis,
 #                                     nn<6)
-=======
-combined_data_small_nomis <- mutate(combined_data_small_nomis,
-                                    nn=if_else(nn==6,4L,nn))
->>>>>>> ae9f259a614b7d64ee3239c5faeaab9950090894
 
 # let's look at histograms of tweets
 
@@ -146,7 +141,9 @@ lookat_cit_patriot <- lookat_cit_ratio %>%
 
 combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
   ungroup() %>% 
-  mutate(cit_ids=as.numeric(factor(rt_ids)))
+  mutate(cit_ids=factor(rt_ids),
+         cit_ids=fct_relevel(cit_ids,246904991),
+         cit_ids=as.numeric(cit_ids))
 
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -235,11 +232,12 @@ start_func <- function() {
        ts_sigma=rep(0.25,4),
        adj1=c(1,1),
        adj2=c(1,1),
+       adj=c(1,1),
        mean_delta=1,
        mean_beta=1,
        sigma_beta=1,
        sigma_delta=.8,
-       shape=1,
+       sigma_time=.25,
        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
        delta=rnorm(max(combined_data_small_nomis$cit_ids)),
        gamma_par1=0,
@@ -247,7 +245,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='nb_irt_id_v3.stan')
+code_compile <- stan_model(file='poisson_irt_check_code.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -270,8 +268,7 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-
-out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
+out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1500,warmup=1000,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
@@ -368,6 +365,5 @@ lookat <- summary(out_fit_id)
 hist(lookat$summary[,'Rhat'])
 # 
 non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
- mcmc_trace(to_plot,regex_pars='steps')
- mcmc_trace(to_plot,pars='delta[7000]')
+ mcmc_trace(to_plot,regex_pars='adj')
 # mcmc_trace(to_plot,pars='lp__')

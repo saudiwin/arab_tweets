@@ -17,7 +17,7 @@ data {
 parameters {    
   vector[K] delta;                  // discriminations
   real<lower=0> mean_beta;     //mean citizen response
-  matrix[T,J] alpha;               // ability of student j - mean ability
+  vector[J-1] alpha_free;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
   vector<lower=0>[2] adj;
   //ordered[C-1] steps;
@@ -30,18 +30,17 @@ parameters {
   //real gamma_par2;
   real<lower=0> sigma_beta;
   real<lower=0> sigma_delta;
+  real<lower=0> islamist;
 }
 
 transformed parameters {
-  // vector[K] beta;
-  // 
-  // beta = append_row(-sum(beta_free),beta_free);
-  // vector[K] delta;
-  // delta=append_row(delta_con_high,append_row(delta_con_low,delta_free));
+  vector[J] alpha;
+  
+  alpha = append_row(islamist,alpha_free);
 }
 
 model {
-  alpha[1,] ~ normal(start_vals,.1);
+  //alpha[1,] ~ normal(start_vals,.1);
 // delta_con_low ~ normal(0,3);
 // delta_con_high ~ normal(0,3);
   //gamma_par1 ~ normal(0,2);
@@ -58,15 +57,8 @@ model {
   sigma_beta ~ exponential(.1);
   sigma_delta ~ exponential(.1);
 
-  alpha[2:T,1] ~ normal(alpha[1:(T-1),1] - gamma1[time_gamma].*(alpha[1:(T-1),1] - (adj[1])*alpha[1:(T-1),2]),
-sigma_time);
-  alpha[2:T,2] ~ normal(alpha[1:(T-1),2] - gamma1[time_gamma].*(alpha[1:(T-1),2] - (1/adj[1])*alpha[1:(T-1),1]),
-sigma_time);
-  alpha[2:T,3] ~ normal(alpha[1:(T-1),3] - gamma2[time_gamma].*(alpha[1:(T-1),3] - (adj[2])*alpha[1:(T-1),4]),
-      sigma_time);
-  alpha[2:T,4] ~ normal(alpha[1:(T-1),4] - gamma2[time_gamma].*(alpha[1:(T-1),4] - (1/adj[2])*alpha[1:(T-1),3]),
-        sigma_time);
-
+  alpha_free ~ normal(0,1);
+  islamist ~ exp(1);
   
   //post-coup gammas
   
@@ -75,5 +67,5 @@ sigma_time);
   delta ~ normal(0,5);   
 
   for(n in 1:N)
-    y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
+    y[n] ~ poisson_log(delta[kk[n]]*alpha[jj[n]] - beta[kk[n]]);
 }
