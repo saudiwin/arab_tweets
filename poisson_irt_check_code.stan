@@ -15,12 +15,12 @@ data {
   int time_gamma[T-1];
 }
 parameters {    
-  vector[K] delta;                  // discriminations
+  vector[K-1] delta_free;                  // discriminations
   real<lower=0> mean_beta;     //mean citizen response
-  vector[J-1] alpha_free;               // ability of student j - mean ability
+  vector[J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
   vector<lower=0>[2] adj;
-  //ordered[C-1] steps;
+  ordered[C-1] steps;
   // vector<lower=0>[4] ts_sigma;
   vector<lower=0>[2] gamma1;
   vector<lower=0>[2] gamma2;
@@ -34,9 +34,9 @@ parameters {
 }
 
 transformed parameters {
-  vector[J] alpha;
+  vector[K] delta;
   
-  alpha = append_row(islamist,alpha_free);
+  delta = append_row(islamist,delta_free);
 }
 
 model {
@@ -56,16 +56,17 @@ model {
   sigma_time ~ exponential(.1);
   sigma_beta ~ exponential(.1);
   sigma_delta ~ exponential(.1);
-
-  alpha_free ~ normal(0,1);
-  islamist ~ exp(1);
+    for(c in 1:(C-2)) 
+    steps[c+1] - steps[c] ~ normal(0,5); 
+  alpha ~ normal(0,1);
+  islamist ~ exponential(1);
   
   //post-coup gammas
   
   beta ~ normal(0,sigma_beta);          
 
-  delta ~ normal(0,5);   
+  delta_free ~ normal(0,5);   
 
   for(n in 1:N)
-    y[n] ~ poisson_log(delta[kk[n]]*alpha[jj[n]] - beta[kk[n]]);
+    y[n] ~ ordered_logistic(delta[kk[n]]*alpha[jj[n]] - beta[kk[n]],steps);
 }
