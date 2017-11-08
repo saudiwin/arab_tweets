@@ -92,17 +92,18 @@ combined_data_small <- left_join(combined_data,
                                  elite_codings2,
                                  by=c('username'='Username')) %>% 
                                    group_by(time_three,
+                                username,
                                 coding_num,
                                 rt_ids,coup) %>% tally
 
 # drop missing
 
-combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
+#combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num)) %>% 
+
 
 # drop the random six in the dataset
 
-# combined_data_small_nomis <- filter(combined_data_small_nomis,
-#                                     nn<6)
+combined_data_small_nomis <-   mutate(combined_data_small,nn=if_else(nn==6,4L,nn))
 
 # let's look at histograms of tweets
 
@@ -139,11 +140,12 @@ lookat_cit_top <- lookat_cit_ratio %>%
 lookat_cit_patriot <- lookat_cit_ratio %>% 
   filter(prop_group==1)
 
-combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
-  ungroup() %>% 
+combined_data_small_nomis <- ungroup(combined_data_small_nomis) %>% 
   mutate(cit_ids=factor(rt_ids),
          cit_ids=fct_relevel(cit_ids,246904991),
-         cit_ids=as.numeric(cit_ids))
+         cit_ids=as.numeric(cit_ids),
+         user_ids=as.numeric(factor(username))) %>% 
+  filter(!is.na(user_ids))
 
 # start_func <- function() {
 #   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
@@ -225,8 +227,7 @@ combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patr
 
 
 start_func <- function() {
-  list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
-                   matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
+  list(alpha=rnorm(max(combined_data_small_nomis$user_ids)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
@@ -235,6 +236,7 @@ start_func <- function() {
        adj=c(1,1),
        mean_delta=1,
        mean_beta=1,
+       islamist=1,
        sigma_beta=1,
        sigma_delta=.8,
        sigma_time=.25,
@@ -269,14 +271,14 @@ this_time <- Sys.time()
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
 out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1500,warmup=1000,
-                    data=list(J=max(combined_data_small_nomis$coding_num),
+                    data=list(J=max(combined_data_small_nomis$user_ids),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
                               N=nrow(combined_data_small_nomis),
                               C=max(combined_data_small_nomis$nn),
                               id_num_high=1,
                               id_num_low=1,
-                              jj=combined_data_small_nomis$coding_num,
+                              jj=combined_data_small_nomis$user_ids,
                               kk=combined_data_small_nomis$cit_ids,
                               tt=combined_data_small_nomis$time_three,
                               y=as.integer(combined_data_small_nomis$nn),
@@ -290,7 +292,7 @@ saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
 to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
-mcmc_trace(to_plot,pars='alpha[50,4]')
+mcmc_trace(to_plot,pars='alpha[50]')
 mcmc_trace(to_plot,pars='sigma_beta')
 mcmc_trace(to_plot,pars='sigma_delta')
 mcmc_trace(to_plot,pars='gamma2[2]')
