@@ -91,10 +91,9 @@ times <- distinct(times,time_three,coup)
 combined_data_small <- left_join(combined_data,
                                  elite_codings2,
                                  by=c('username'='Username')) %>% 
-                                   group_by(time_three,
-                                username,
+                                   group_by(username,
                                 coding_num,
-                                rt_ids,coup) %>% tally
+                                rt_ids) %>% tally
 
 # drop missing
 
@@ -105,25 +104,9 @@ combined_data_small <- left_join(combined_data,
 
 combined_data_small_nomis <-   mutate(combined_data_small,nn=if_else(nn==6,4L,nn))
 
-# let's look at histograms of tweets
-
-lookat <- group_by(combined_data_small_nomis,time_three,coding_num) %>% summarize(sum_count=sum(nn)) %>% 
-  mutate(Series=recode(as.character(coding_num),`1`='Islamist Egypt',
-                           `2`='Islamist Tunisia',
-                           `3`='Secularist Egypt',
-                           `4`='Secularist Tunisia'))
-
-ggplot(lookat,aes(y=sum_count,x=time_three)) + geom_path() + theme_minimal() + facet_wrap(~Series,scales='free_y') +
-  ylab('') + xlab('') +
-  scale_x_continuous(breaks=c(6,32,75),
-                     labels=c('2013-03-31','2013-07-02','2013-11-08')) +
-  geom_vline(aes(xintercept=32),linetype=3)
-
-ggsave('retweets_counts.png')
-
 # types of retweets over time 
 
-lookat_c_ret <- group_by(combined_data_small_nomis,time_three,coding_num) %>% summarize(onet=sum(nn==1),
+lookat_c_ret <- group_by(combined_data_small_nomis,coding_num) %>% summarize(onet=sum(nn==1),
                                                                                         twot=sum(nn==2),
                                                                                         threet=sum(nn==3),
                                                                                         fourt=sum(nn==4))
@@ -146,84 +129,6 @@ combined_data_small_nomis <- ungroup(combined_data_small_nomis) %>%
          cit_ids=as.numeric(cit_ids),
          user_ids=as.numeric(factor(username))) %>% 
   filter(!is.na(user_ids))
-
-# start_func <- function() {
-#   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
-#                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
-#        gamma1=c(0.5,0.5),
-#        gamma2=c(0.5,0.5),
-#        ts_sigma=rep(0.25,4),
-#        adj=c(1,1),
-#        mean_delta=0,
-#        mean_beta=0,
-#        sigma_beta=1,
-#        sigma_delta=1,
-#        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-#        delta=rnorm(max(combined_data_small_nomis$cit_ids)),
-#        gamma_par1=0,
-#        gamma_par2=0)
-# }
-
-# run it again, and this time constrain deltas
-
-# get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
-# 
-# mean_vals <- apply(get_time,2,mean)
-# sd_vals <- apply(get_time,2,sd)
-# filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
-#   filter(sd_vals<2)
-# 
-# # number to identify
-# id_num_high <- 40
-# id_num_low <- 4
-# top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
-# bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
-# 
-# new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
-#   as.numeric
-# 
-# new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
-# 
-# combined_data_small_nomis$cit_ids <- new_vals
-
-# code_compile <- stan_model(file='ord_irt_v1.stan')
-# 
-# out_fit <- vb(code_compile,
-#                     data=list(J=max(combined_data_small_nomis$coding_num),
-#                               K=max(combined_data_small_nomis$cit_ids),
-#                               `T`=max(combined_data_small_nomis$time_three),
-#                               N=nrow(combined_data_small_nomis),
-#                               C=3,
-#                               jj=combined_data_small_nomis$coding_num,
-#                               kk=combined_data_small_nomis$cit_ids,
-#                               tt=combined_data_small_nomis$time_three,
-#                               y=as.integer(combined_data_small_nomis$nn),
-#                               coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-#                               start_vals=c(-1,-1,1,1),
-#                               time_gamma=times$coup[-nrow(times)]),
-#                     init=start_func)
-# 
-# # run it again, and this time constrain deltas
-# 
-# get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
-# 
-# mean_vals <- apply(get_time,2,mean)
-# sd_vals <- apply(get_time,2,sd)
-# filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
-#   filter(sd_vals<2)
-# 
-# # number to identify
-# id_num_high <- 20
-# id_num_low <- 4
-# top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
-# bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
-# 
-# # new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
-# #   as.numeric
-# # 
-# # new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
-# # 
-# # combined_data_small_nomis$cit_ids <- new_vals
 
 
 start_func <- function() {
@@ -270,28 +175,48 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1500,warmup=1000,
+out_fit_id <- sampling(code_compile,chains=4,cores=4,iter=1500,warmup=1000,
                     data=list(J=max(combined_data_small_nomis$user_ids),
                               K=max(combined_data_small_nomis$cit_ids),
-                              `T`=max(combined_data_small_nomis$time_three),
+
                               N=nrow(combined_data_small_nomis),
-                              C=max(combined_data_small_nomis$nn),
+ #                             C=max(combined_data_small_nomis$nn),
                               id_num_high=1,
                               id_num_low=1,
                               jj=combined_data_small_nomis$user_ids,
                               kk=combined_data_small_nomis$cit_ids,
-                              tt=combined_data_small_nomis$time_three,
                               y=as.integer(combined_data_small_nomis$nn),
-                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-                              start_vals=c(-.5,-.5,.5,.5),
-                              time_gamma=times$coup[-nrow(times)]),
+                              start_vals=c(-.5,-.5,.5,.5)),
                     init=start_func)
-saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
-#drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
-mcmc_intervals(to_plot,regex_pars = 'adj')
+#distinct usernames and codings 
+
+distinct_code <- distinct(combined_data_small_nomis,username,coding_num)
+all_alphas <- rstan::extract(out_fit_id,'alpha')[[1]] %>% apply(2,function(c) {
+  data_frame(mean_est=mean(c),
+             high=quantile(c,0.9),
+             low=quantile(c,0.1)) %>% 
+    return()
+}) %>% bind_rows() %>% 
+  mutate(user_name=distinct_code$username,
+         coding=fct_recode(factor(distinct_code$coding_num),`Islamist Egypt`='1',
+                                           `Islamist Tunisia`='2',
+                                           `Secularist Egypt`='3',
+                                           `Secularist Tunisia`='4'))
+
+all_alphas %>% 
+  filter(!is.na(coding)) %>% 
+  ggplot(aes(x=reorder(user_name,mean_est),y=mean_est)) +
+  geom_pointrange(aes(ymin=low,ymax=high,colour=coding)) +
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank()) +
+  coord_flip() +
+  facet_wrap(facets = ~coding,scales='free_y')
+
+mcmc_intervals(to_plot,regex_pars = 'alpha')
 mcmc_trace(to_plot,pars='alpha[50]')
 mcmc_trace(to_plot,pars='sigma_beta')
 mcmc_trace(to_plot,pars='sigma_delta')
