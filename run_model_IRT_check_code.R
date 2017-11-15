@@ -115,9 +115,23 @@ lookat_cit_ratio <- group_by(combined_data_small_nomis,rt_ids,coding_num) %>% ta
   group_by(rt_ids) %>% 
   mutate(prop_group=n/sum(n))
 
+lookat_cty_ratio <- mutate(combined_data_small_nomis,
+                           country=recode(coding_num,`1`=1L,
+                                          `3`=1L,
+                                          `2`=2L,
+                                          `4`=2L)) %>% 
+                             group_by(rt_ids,country) %>% tally %>% 
+  group_by(rt_ids) %>% 
+  mutate(prop_group=n/sum(n))
+
 lookat_cit_top <- lookat_cit_ratio %>% 
   filter(prop_group>.8) %>% 
   group_by(coding_num) %>% 
+  top_n(2,n)
+
+lookat_cty_top <- lookat_cty_ratio %>% 
+  filter(prop_group>.8) %>% 
+  group_by(country) %>% 
   top_n(2,n)
 
 lookat_cit_patriot <- lookat_cit_ratio %>% 
@@ -125,7 +139,7 @@ lookat_cit_patriot <- lookat_cit_ratio %>%
 
 combined_data_small_nomis <- ungroup(combined_data_small_nomis) %>% 
   mutate(cit_ids=factor(rt_ids),
-         cit_ids=fct_relevel(cit_ids,246904991),
+         cit_ids=fct_relevel(cit_ids,246904991,52517368),
          cit_ids=as.numeric(cit_ids),
          user_ids=as.numeric(factor(username))) %>% 
   filter(!is.na(user_ids))
@@ -152,7 +166,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='poisson_irt_check_code.stan')
+code_compile <- stan_model(file='poisson_irt_check_code_2d.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -175,7 +189,7 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-out_fit_id <- sampling(code_compile,chains=4,cores=4,iter=1500,warmup=1000,
+out_fit_id <- vb(code_compile,
                     data=list(J=max(combined_data_small_nomis$user_ids),
                               K=max(combined_data_small_nomis$cit_ids),
 
@@ -204,8 +218,16 @@ all_alphas <- rstan::extract(out_fit_id,'alpha')[[1]] %>% apply(2,function(c) {
          coding=fct_recode(factor(distinct_code$coding_num),`Islamist Egypt`='1',
                                            `Islamist Tunisia`='2',
                                            `Secularist Egypt`='3',
-                                           `Secularist Tunisia`='4'))
-
+                                           `Secularist Tunisia`='4'),
+         country=fct_collapse(coding,Egypt=c('Secularist Egypt',
+                                      'Islamist Egypt'),
+                              Tunisia=c('Secularist Tunisia',
+                                        'Islamist Tunisia')),
+         ideology=fct_collapse(coding,Secularist=c('Secularist Egypt',
+                                            'Secularist Tunisia'),
+                               Islamist=c('Islamist Egypt',
+                                          'Islamist Tunisia')))
+# individual panels
 all_alphas %>% 
   filter(!is.na(coding)) %>% 
   ggplot(aes(x=reorder(user_name,mean_est),y=mean_est)) +
@@ -214,7 +236,23 @@ all_alphas %>%
   theme(panel.grid = element_blank(),
         axis.text.x = element_blank()) +
   coord_flip() +
-  facet_wrap(facets = ~coding,scales='free_y')
+  facet_wrap(facets = ~coding,scales='free_y') + ylab('')
+
+#country panels
+all_alphas %>% 
+  filter(!is.na(coding)) %>% 
+  ggplot(aes(x=reorder(user_name,mean_est),y=mean_est)) +
+  geom_pointrange(aes(ymin=low,ymax=high,colour=coding)) +
+  theme_minimal() +
+  theme(panel.grid = element_blank()) +
+  coord_flip() +
+  facet_wrap(facets = ~country,scales='free_y') + xlab('') + 
+  ylab('Clustering Coefficient from IRT Model')
+
+ggsave('clustering_1d.png',width=15,height=10,units='in')
+
+#ideology panels
+
 
 mcmc_intervals(to_plot,regex_pars = 'alpha')
 mcmc_trace(to_plot,pars='alpha[50]')
