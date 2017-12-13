@@ -15,33 +15,43 @@ require(forcats)
 # 
 # mcmc_intervals(to_plot,regex_pars='gamma')
 
-gamma1 <- rstan::extract(out_fit_id,pars='gamma1')$gamma1
+gamma11 <- rstan::extract(out_fit_id,pars='gamma11')$gamma11
+gamma12 <- rstan::extract(out_fit_id,pars='gamma12')$gamma12
+gamma21 <- rstan::extract(out_fit_id,pars='gamma21')$gamma21
+gamma22 <- rstan::extract(out_fit_id,pars='gamma22')$gamma22
 
-gamma2 <- rstan::extract(out_fit_id,pars='gamma2')$gamma2
 
 
-all_gammas <- data_frame(Islamists=gamma1[,2]-gamma1[,1],
-                         Secularists=gamma2[,2]-gamma2[,1],
-                         `Islamists\nPre-Coup`=gamma1[,1],
-                         `Islamists\nPost-Coup`=gamma1[,2],
-                         `Secularists\nPre-Coup`=gamma2[,1],
-                         `Secularists\nPost-Coup`=gamma2[,2]) %>% 
+all_gammas <- data_frame(`Egyptian Islamists`=gamma11[,2]-gamma11[,1],
+                         `Tunisian Islamists`=gamma12[,2]-gamma12[,1],
+                         `Egyptian Secularists`=gamma21[,2]-gamma21[,1],
+                         `Tunisian Secularists`=gamma22[,2]-gamma22[,1],
+                         `Egyptian Islamists\nPre-Coup`=gamma11[,1],
+                         `Tunisian Islamists\nPre-Coup`=gamma12[,1],
+                         `Egyptian Islamists\nPost-Coup`=gamma11[,2],
+                         `Tunisian Islamists\nPost-Coup`=gamma12[,2],
+                         `Egyptian Secularists\nPre-Coup`=gamma21[,1],
+                         `Tunisian Secularists\nPre-Coup`=gamma22[,1],
+                         `Egyptian Secularists\nPost-Coup`=gamma21[,2],
+                         `Tunisian Secularists\nPost-Coup`=gamma22[,2]) %>% 
   gather(`Ideological\nPairing`,Difference) %>% 
   group_by(`Ideological\nPairing`) %>% 
   mutate(mean_val=median(Difference))
 
-filter(all_gammas, `Ideological\nPairing` %in% c('Islamists','Secularists')) %>% 
+filter(all_gammas, `Ideological\nPairing` %in% c('Egyptian Islamists','Egyptian Secularists',
+                                                 'Tunisian Islamists','Tunisian Secularists')) %>% 
   ggplot(aes(x=Difference)) +
   geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha=0.5,adjust=0.5) +
   theme_minimal() +
   theme(panel.grid = element_blank()) +
-  xlab('Gamma Difference') +
+  xlab('Difference in Overall Feedback Levels Across Countries\n and Ideological Groups (Gamma Parameter)') +
   ylab('Posterior Density') +
   geom_vline(aes(xintercept=mean_val,linetype=`Ideological\nPairing`))
 
 ggsave('gamma_diff.png')
 
-filter(all_gammas,!( `Ideological\nPairing` %in% c('Islamists','Secularists'))) %>% 
+filter(all_gammas,!( `Ideological\nPairing` %in% c('Egyptian Islamists','Egyptian Secularists',
+                                                   'Tunisian Islamists','Tunisian Secularists'))) %>% 
   ggplot(aes(x=Difference,y=`Ideological\nPairing`,fill=`Ideological\nPairing`)) +
     geom_density_ridges(colour=NA) +
   scale_y_discrete(expand = c(0.01, 0)) +
@@ -55,10 +65,15 @@ filter(all_gammas,!( `Ideological\nPairing` %in% c('Islamists','Secularists'))) 
 
 ggsave('gamma_joy.png')
 
-summarize(all_gammas,mean_val=mean(Difference),
+filter(all_gammas,grepl('Coup',`Ideological\nPairing`)) %>% 
+  ungroup() %>% 
+  mutate(`Ideological\nPairing`=stringr::str_replace(`Ideological\nPairing`,'\n',' ')) %>% 
+  group_by(`Ideological\nPairing`) %>% 
+  summarize(mean_val=mean(Difference),
           median_val=median(Difference),
           upper=quantile(Difference,0.9),
-          lower=quantile(Difference,0.1))
+          lower=quantile(Difference,0.1)) %>% 
+  write_csv('data/gamma_results.csv')
 
 get_time_raw <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time_raw[sample(1:nrow(get_time_raw),101),,]
@@ -114,29 +129,27 @@ ggsave('country_coint.png')
 # Let's do some impulse response functions
 adj <- rstan::extract(out_fit_id,pars='adj')$adj
 
-irf <- function(time=1,shock=0.5,gamma=NULL,adj=NULL,num=1,y_1=0,x_1=0,total_t=10,
+irf <- function(time=1,shock=1,gamma1=NULL,
+                gamma2=NULL,
+                adj=NULL,y_1=0,x_1=0,total_t=10,
                 old_output=NULL) {
   
   # set up the exogenous shock
   if(time==1) {
-    if(num==1) {
-      y_1 <- shock
-    } else {
-      x_1 <- shock
-    }
+    x_1 <- shock 
   }
   
   if(time==1) {
-    y_1 <- rep(y_1,times=length(gamma))
-    x_1 <- rep(x_1,times=length(gamma))
+    y_1 <- rep(y_1,times=length(gamma1))
+    x_1 <- rep(x_1,times=length(gamma1))
   }
   print(paste0('Now processing time point ',time))
 
   # Calculate current values of y and x given posterior uncertainty
-  output <- data_frame(y=y_1 - gamma*(y_1 - adj * x_1),
-                      x=x_1 - gamma*(x_1 - (1/adj)*y_1),
+  output <- data_frame(y=y_1 - gamma1*(y_1 - adj * x_1),
+                      x=x_1 - gamma2*(x_1 - (1/adj)*y_1),
                       time=time,
-                      iter=1:length(gamma))
+                      iter=1:length(gamma1))
   
   if(!is.null(old_output)) {
     new_output <- bind_rows(old_output,output)
@@ -149,9 +162,9 @@ irf <- function(time=1,shock=0.5,gamma=NULL,adj=NULL,num=1,y_1=0,x_1=0,total_t=1
   if(time<total_t) {
     irf(time=time+1,
         shock=shock,
-        gamma=gamma,
+        gamma1=gamma1,
+        gamma2=gamma2,
         adj=adj,
-        num=num,
         y_1=output$y,
         x_1=output$x,
         total_t=total_t,
@@ -162,13 +175,17 @@ irf <- function(time=1,shock=0.5,gamma=NULL,adj=NULL,num=1,y_1=0,x_1=0,total_t=1
   
 }
 
-is_prec1 <- irf(gamma=gamma1[,1],
+is_prec1 <- irf(gamma1=gamma11[,1],
+                gamma2=gamma12[,1],
                      adj=adj[,1])
-is_post1 <- irf(gamma=gamma1[,2],
+is_post1 <- irf(gamma1=gamma11[,2],
+                gamma2=gamma12[,2],
                       adj=adj[,1])
-se_prec1 <- irf(gamma=gamma2[,1],
+se_prec1 <- irf(gamma1=gamma21[,1],
+                gamma2=gamma22[,1],
                        adj=adj[,2])
-se_post1 <- irf(gamma=gamma2[,2],
+se_post1 <- irf(gamma1=gamma21[,2],
+                gamma2=gamma22[,2],
                         adj=adj[,2])
 
 all_irfs1 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec1,
@@ -188,7 +205,7 @@ hdr <- function(datap) {
   
 
 all_irfs1 %>% 
-  ggplot(aes(y=x_irf,x=time))   +
+  ggplot(aes(y=y_irf,x=time))   +
   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
@@ -196,16 +213,34 @@ all_irfs1 %>%
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='')
 
-ggsave('irf_egypt.png')
+ggsave('irf_egypt_panels.png')
 
-is_prec2 <- irf(gamma=gamma1[,1],
-                adj=adj[,1],num=2)
-is_post2 <- irf(gamma=gamma1[,2],
-                adj=adj[,1],num=2)
-se_prec2 <- irf(gamma=gamma2[,1],
-                adj=adj[,2],num=2)
-se_post2 <- irf(gamma=gamma2[,2],
-                adj=adj[,2],num=2)
+all_irfs1 %>% 
+  separate(Series,into=c('Religion','Time Period'),sep = '\n') %>% 
+  ggplot(aes(y=y_irf,x=time))   +
+  stat_summary(geom='ribbon',fun.data = hdr,fill='grey80',aes(group=`Time Period`),alpha=0.5) + theme_minimal() +
+  stat_summary(fun.y='median',geom='path',aes(linetype=`Time Period`)) +
+  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
+  scale_colour_brewer(palette='paired',name='') + 
+  facet_wrap(~Religion,scales='free_y',ncol = 1) +
+  scale_linetype(name='')
+
+ggsave('irf_egypt_overlap.png')
+
+#Now redo where Tunisia is outcome of the IRF
+
+is_prec2 <- irf(gamma2=gamma11[,1],
+                gamma1=gamma12[,1],
+                adj=adj[,1])
+is_post2 <- irf(gamma2=gamma11[,2],
+                gamma1=gamma12[,2],
+                adj=adj[,1])
+se_prec2 <- irf(gamma2=gamma21[,1],
+                gamma1=gamma22[,1],
+                adj=adj[,2])
+se_post2 <- irf(gamma2=gamma21[,2],
+                gamma1=gamma22[,2],
+                adj=adj[,2])
 
 all_irfs2 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec2,
                             `Islamists\nPost-Coup`=is_post2,
@@ -225,110 +260,123 @@ all_irfs2 %>%
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='')
 
-ggsave('irf_tunisia.png')
+ggsave('irf_tunisia_panels.png')
+
+all_irfs2 %>% 
+  separate(Series,into=c('Religion','Time Period'),sep = '\n') %>% 
+  ggplot(aes(y=y_irf,x=time))   +
+  stat_summary(geom='ribbon',fun.data = hdr,fill='grey80',aes(group=`Time Period`),alpha=0.5) + theme_minimal() +
+  stat_summary(fun.y='median',geom='path',aes(linetype=`Time Period`)) +
+  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
+  scale_colour_brewer(palette='paired',name='') + 
+  facet_wrap(~Religion,scales='free_y',ncol = 1) +
+  scale_linetype(name='')
+
+ggsave('irf_tunisia_overlap.png')
 
 # try the same thing while varying the adjustment parameter
 
-out_fit_id <- readRDS('data/out_fit_id_2017-08-28 17-20-18.rds')
-
-adj1 <- rstan::extract(out_fit_id,pars='adj1')$adj1
-adj2 <- rstan::extract(out_fit_id,pars='adj2')$adj2
-
-all_adjs <- data_frame(Islamists=adj1[,2]-adj1[,1],
-                         Secularists=adj2[,2]-adj2[,1],
-                         `Islamists\nPre-Coup`=adj1[,1],
-                         `Islamists\nPost-Coup`=adj1[,2],
-                         `Secularists\nPre-Coup`=adj2[,1],
-                         `Secularists\nPost-Coup`=adj2[,2]) %>% 
-  gather(`Ideological\nPairing`,Difference) %>% 
-  group_by(`Ideological\nPairing`) %>% 
-  mutate(mean_val=median(Difference))
-
-filter(all_adjs, `Ideological\nPairing` %in% c('Islamists','Secularists')) %>% 
-  ggplot(aes(x=Difference)) +
-  geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha=0.5,adjust=0.5) +
-  theme_minimal() +
-  theme(panel.grid = element_blank()) +
-  xlab('Co-integration Vector Difference') +
-  ylab('Posterior Density') +
-  geom_vline(aes(xintercept=mean_val,linetype=`Ideological\nPairing`))
-
-ggsave('adj_diff.png')
-
-filter(all_adjs,!( `Ideological\nPairing` %in% c('Islamists','Secularists'))) %>% 
-  ggplot(aes(x=Difference,y=`Ideological\nPairing`,fill=`Ideological\nPairing`)) +
-  geom_joy(colour=NA,rel_min_height = 0.005) +
-  scale_y_discrete(expand = c(0.01, 0)) +
-  scale_x_continuous(expand = c(0.01, 0)) +
-  theme_joy() +
-  scale_fill_brewer(palette='Paired') +
-  xlab('') +
-  ylab('') +
-  theme(panel.grid = element_blank()) + 
-  guides(fill='none')
-
-ggsave('adj_joy.png')
-
-
-
-gamma1 <-  rstan::extract(out_fit_id,pars='gamma1')$gamma1
-gamma2 <-  rstan::extract(out_fit_id,pars='gamma2')$gamma2
-
-is_prec1 <- irf(gamma=gamma1,
-                adj=adj1[,1])
-is_post1 <- irf(gamma=gamma1,
-                adj=adj1[,2])
-se_prec1 <- irf(gamma=gamma2,
-                adj=adj2[,1])
-se_post1 <- irf(gamma=gamma2,
-                adj=adj2[,2])
-
-all_irfs1 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec1,
-                            `Islamists\nPost-Coup`=is_post1,
-                            `Secularists\nPre-Coup`=se_prec1,
-                            `Secularists\nPost-Coup`=se_post1),
-                       .id='Series') %>% 
-  group_by(Series,iter) %>% 
-  mutate(x_irf=x - lag(x,order_by=time),
-         y_irf=y-lag(y,order_by=time))
-
-all_irfs1 %>% 
-  ggplot(aes(y=x_irf,x=time))   +
-  stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
-  stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series,scales='free_y') +
-  scale_linetype(name='')
-
-ggsave('irf_egypt_adj.png')
-
-is_prec2 <- irf(gamma=gamma1,
-                adj=adj1[,1],num=2)
-is_post2 <- irf(gamma=gamma1,
-                adj=adj1[,2],num=2)
-se_prec2 <- irf(gamma=gamma2,
-                adj=adj2[,1],num=2)
-se_post2 <- irf(gamma=gamma2,
-                adj=adj2[,2],num=2)
-
-
-all_irfs2 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec2,
-                            `Islamists\nPost-Coup`=is_post2,
-                            `Secularists\nPre-Coup`=se_prec2,
-                            `Secularists\nPost-Coup`=se_post2),
-                       .id='Series') %>% 
-  group_by(Series,iter) %>% 
-  mutate(x_irf=x - lag(x,order_by=time),
-         y_irf=y-lag(y,order_by=time))
-
-all_irfs2 %>% 
-  ggplot(aes(y=y_irf,x=time))   +
-  stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
-  stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series,scales='free_y') +
-  scale_linetype(name='')
-
-ggsave('irf_tunisia_adj.png')
+# out_fit_id <- readRDS('data/out_fit_id_2017-08-28 17-20-18.rds')
+# 
+# adj1 <- rstan::extract(out_fit_id,pars='adj1')$adj1
+# adj2 <- rstan::extract(out_fit_id,pars='adj2')$adj2
+# 
+# all_adjs <- data_frame(Islamists=adj1[,2]-adj1[,1],
+#                          Secularists=adj2[,2]-adj2[,1],
+#                          `Islamists\nPre-Coup`=adj1[,1],
+#                          `Islamists\nPost-Coup`=adj1[,2],
+#                          `Secularists\nPre-Coup`=adj2[,1],
+#                          `Secularists\nPost-Coup`=adj2[,2]) %>% 
+#   gather(`Ideological\nPairing`,Difference) %>% 
+#   group_by(`Ideological\nPairing`) %>% 
+#   mutate(mean_val=median(Difference))
+# 
+# filter(all_adjs, `Ideological\nPairing` %in% c('Islamists','Secularists')) %>% 
+#   ggplot(aes(x=Difference)) +
+#   geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha=0.5,adjust=0.5) +
+#   theme_minimal() +
+#   theme(panel.grid = element_blank()) +
+#   xlab('Co-integration Vector Difference') +
+#   ylab('Posterior Density') +
+#   geom_vline(aes(xintercept=mean_val,linetype=`Ideological\nPairing`))
+# 
+# ggsave('adj_diff.png')
+# 
+# filter(all_adjs,!( `Ideological\nPairing` %in% c('Islamists','Secularists'))) %>% 
+#   ggplot(aes(x=Difference,y=`Ideological\nPairing`,fill=`Ideological\nPairing`)) +
+#   geom_joy(colour=NA,rel_min_height = 0.005) +
+#   scale_y_discrete(expand = c(0.01, 0)) +
+#   scale_x_continuous(expand = c(0.01, 0)) +
+#   theme_joy() +
+#   scale_fill_brewer(palette='Paired') +
+#   xlab('') +
+#   ylab('') +
+#   theme(panel.grid = element_blank()) + 
+#   guides(fill='none')
+# 
+# ggsave('adj_joy.png')
+# 
+# 
+# 
+# gamma1 <-  rstan::extract(out_fit_id,pars='gamma1')$gamma1
+# gamma2 <-  rstan::extract(out_fit_id,pars='gamma2')$gamma2
+# 
+# is_prec1 <- irf(gamma1=gamma11[,1],
+#                 gamma2=gamma12[,1],
+#                 adj=adj1[,1])
+# is_post1 <- irf(gamma=gamma1,
+#                 adj=adj1[,2])
+# se_prec1 <- irf(gamma=gamma2,
+#                 adj=adj2[,1])
+# se_post1 <- irf(gamma=gamma2,
+#                 adj=adj2[,2])
+# 
+# all_irfs1 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec1,
+#                             `Islamists\nPost-Coup`=is_post1,
+#                             `Secularists\nPre-Coup`=se_prec1,
+#                             `Secularists\nPost-Coup`=se_post1),
+#                        .id='Series') %>% 
+#   group_by(Series,iter) %>% 
+#   mutate(x_irf=x - lag(x,order_by=time),
+#          y_irf=y-lag(y,order_by=time))
+# 
+# all_irfs1 %>% 
+#   ggplot(aes(y=x_irf,x=time))   +
+#   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
+#   stat_summary(fun.y='median',geom='path',linetype=2) +
+#   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
+#   scale_colour_brewer(palette='paired',name='') + 
+#   facet_wrap(~Series,scales='free_y') +
+#   scale_linetype(name='')
+# 
+# ggsave('irf_egypt_adj.png')
+# 
+# is_prec2 <- irf(gamma=gamma1,
+#                 adj=adj1[,1],num=2)
+# is_post2 <- irf(gamma=gamma1,
+#                 adj=adj1[,2],num=2)
+# se_prec2 <- irf(gamma=gamma2,
+#                 adj=adj2[,1],num=2)
+# se_post2 <- irf(gamma=gamma2,
+#                 adj=adj2[,2],num=2)
+# 
+# 
+# all_irfs2 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec2,
+#                             `Islamists\nPost-Coup`=is_post2,
+#                             `Secularists\nPre-Coup`=se_prec2,
+#                             `Secularists\nPost-Coup`=se_post2),
+#                        .id='Series') %>% 
+#   group_by(Series,iter) %>% 
+#   mutate(x_irf=x - lag(x,order_by=time),
+#          y_irf=y-lag(y,order_by=time))
+# 
+# all_irfs2 %>% 
+#   ggplot(aes(y=y_irf,x=time))   +
+#   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
+#   stat_summary(fun.y='median',geom='path',linetype=2) +
+#   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
+#   scale_colour_brewer(palette='paired',name='') + 
+#   facet_wrap(~Series,scales='free_y') +
+#   scale_linetype(name='')
+# 
+# ggsave('irf_tunisia_adj.png')
