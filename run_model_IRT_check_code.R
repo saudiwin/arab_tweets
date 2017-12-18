@@ -102,7 +102,12 @@ combined_data_small <- left_join(combined_data,
 
 # drop the random six in the dataset
 
-combined_data_small_nomis <-   mutate(combined_data_small,nn=if_else(nn==6,4L,nn))
+combined_data_small_nomis <-   mutate(combined_data_small,
+                                      country=recode(coding_num,`1`=1L,
+                                                     `3`=1L,
+                                                     `2`=2L,
+                                                     `4`=2L)) %>% 
+  filter(!is.na(username),!is.na(coding_num))
 
 # types of retweets over time 
 
@@ -115,11 +120,7 @@ lookat_cit_ratio <- group_by(combined_data_small_nomis,rt_ids,coding_num) %>% ta
   group_by(rt_ids) %>% 
   mutate(prop_group=n/sum(n))
 
-lookat_cty_ratio <- mutate(combined_data_small_nomis,
-                           country=recode(coding_num,`1`=1L,
-                                          `3`=1L,
-                                          `2`=2L,
-                                          `4`=2L)) %>% 
+lookat_cty_ratio <- combined_data_small_nomis %>% 
                              group_by(rt_ids,country) %>% tally %>% 
   group_by(rt_ids) %>% 
   mutate(prop_group=n/sum(n))
@@ -141,12 +142,11 @@ combined_data_small_nomis <- ungroup(combined_data_small_nomis) %>%
   mutate(cit_ids=factor(rt_ids),
          cit_ids=fct_relevel(cit_ids,246904991,52517368),
          cit_ids=as.numeric(cit_ids),
-         user_ids=as.numeric(factor(username))) %>% 
-  filter(!is.na(user_ids))
+         user_ids=as.numeric(factor(username)))
 
 
 start_func <- function() {
-  list(alpha=rnorm(max(combined_data_small_nomis$user_ids)),
+  list(alpha=rnorm(max(U)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
@@ -156,17 +156,19 @@ start_func <- function() {
        mean_delta=1,
        mean_beta=1,
        islamist=1,
+       country=1,
+       free_params=rnorm(2),
        sigma_beta=1,
        sigma_delta=.8,
        sigma_time=.25,
-       beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       beta=rnorm(max(C)),
+       delta=rnorm(max(C)),
        gamma_par1=0,
        gamma_par2=0)
 }
 
 
-code_compile <- stan_model(file='poisson_irt_check_code_2d.stan')
+# code_compile <- stan_model(file='poisson_irt_check_code_2d.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -189,26 +191,199 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-out_fit_id <- vb(code_compile,
-                    data=list(J=max(combined_data_small_nomis$user_ids),
-                              K=max(combined_data_small_nomis$cit_ids),
-
-                              N=nrow(combined_data_small_nomis),
- #                             C=max(combined_data_small_nomis$nn),
-                              id_num_high=1,
-                              id_num_low=1,
-                              jj=combined_data_small_nomis$user_ids,
-                              kk=combined_data_small_nomis$cit_ids,
-                              y=as.integer(combined_data_small_nomis$nn),
-                              start_vals=c(-.5,-.5,.5,.5)),
-                    init=start_func)
-
-to_plot <- as.array(out_fit_id)
+#lets do egypt and tunisia separately
+combined_data_egypt <- filter(combined_data_small_nomis,country==1) %>% 
+  mutate(user_ids=as.numeric(factor(user_ids)),
+         cit_ids=as.numeric(factor(cit_ids)))
+C <- max(combined_data_egypt$cit_ids)
+U <- max(combined_data_egypt$user_ids)
+# out_fit_id_egypt <- vb(code_compile,
+#                     data=list(J=max(combined_data_egypt$user_ids),
+#                               K=max(combined_data_egypt$cit_ids),
+# 
+#                               N=nrow(combined_data_egypt),
+#  #                             C=max(combined_data_egypt$nn),
+#                               id_num_high=1,
+#                               id_num_low=1,
+#                               jj=combined_data_egypt$user_ids,
+#                               kk=combined_data_egypt$cit_ids,
+#                               cc=combined_data_egypt$country,
+#                               y=as.integer(combined_data_egypt$nn),
+#                               start_vals=c(-.5,-.5,.5,.5)),
+#                     init=start_func)
+combined_data_tunis <- filter(combined_data_small_nomis,country==2) %>% 
+  mutate(user_ids=as.numeric(factor(user_ids)),
+         cit_ids=as.numeric(factor(cit_ids)))
+C <- max(combined_data_tunis$cit_ids)
+U <- max(combined_data_tunis$user_ids)
+# out_fit_id_tunis <- vb(code_compile,
+#                        data=list(J=max(combined_data_tunis$user_ids),
+#                                  K=max(combined_data_tunis$cit_ids),
+#                                  
+#                                  N=nrow(combined_data_tunis),
+#                                  #                             C=max(combined_data_tunis$nn),
+#                                  id_num_high=1,
+#                                  id_num_low=1,
+#                                  jj=combined_data_tunis$user_ids,
+#                                  kk=combined_data_tunis$cit_ids,
+#                                  cc=combined_data_tunis$country,
+#                                  y=as.integer(combined_data_tunis$nn),
+#                                  start_vals=c(-.5,-.5,.5,.5)),
+#                        init=start_func)
 
 #distinct usernames and codings 
 
-distinct_code <- distinct(combined_data_small_nomis,username,coding_num)
-all_alphas <- rstan::extract(out_fit_id,'alpha')[[1]] %>% apply(2,function(c) {
+distinct_code <- distinct(combined_data_small_nomis,username,coding_num,country)
+
+
+# Let's try some factor analysis for Tunisia
+
+spread_tunis <- ungroup(combined_data_tunis) %>% 
+  select(username,nn,rt_ids) %>% spread(key = username,value=nn,
+                       fill=0)
+tunis_matrix <- select(spread_tunis,-matches('id')) %>% as.matrix %>% 
+  apply(2,function(c) c <- if_else(c>0,1,c))
+row.names(tunis_matrix) <- spread_tunis$rt_ids 
+
+require(FactoMineR)
+
+# tunis_PCA <- PCA(t(tunis_matrix),ncp=10)
+# tunis_PCA_cluster <- HCPC(tunis_PCA)
+# tunis_CA <- CA(t(tunis_matrix))
+# tunis_kmeans <- kmeans(t(tunis_matrix),10)
+#MDS
+
+d_tun <- dist(scale(t(tunis_matrix)))
+ord_scale_tun <- MASS::isoMDS(d_tun,k = 3)
+met_scale_tun <- cmdscale(d_tun,eig=T, k=2)
+
+data_frame(username=colnames(tunis_matrix),
+           dim1=ord_scale_tun$points[,1],
+           dim2=ord_scale_tun$points[,2],
+           dim3=ord_scale_tun$points[,3]) %>% 
+  left_join(distinct_code,'username') %>% 
+  mutate(coding=fct_recode(factor(coding_num),`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4'),
+         coding=fct_relevel(coding,'Secularist Tunisia')) %>% 
+  ggplot(aes(y=dim2,x=reorder(username,dim2),size=coding,colour=coding)) + 
+  geom_text(aes(label=username)) +
+  theme_minimal()
+check_tunis <- data_frame(username=colnames(tunis_matrix),
+                          dim1=ord_scale_tun$points[,1],
+                          dim2=ord_scale_tun$points[,2],
+                          dim3=ord_scale_tun$points[,3]) %>% 
+  left_join(distinct_code,'username') %>% 
+  mutate(coding=fct_recode(factor(coding_num),`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4'),
+         coding=fct_relevel(coding,'Secularist Tunisia'))
+data_frame(username=colnames(tunis_matrix),
+           dim1=ord_scale_tun$points[,1],
+           dim2=ord_scale_tun$points[,2],
+           dim3=ord_scale_tun$points[,3]) %>% 
+  left_join(distinct_code,'username') %>% 
+  mutate(coding=fct_recode(factor(coding_num),`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4'),
+         coding=fct_relevel(coding,'Secularist Egypt')) %>% 
+  plot_ly(x=~dim1,y=~dim2,z=~dim3,text=~username,color=~coding) %>% 
+  add_markers()
+
+#to_plot <- as.array(out_fit_id_egypt)
+
+data_frame(username=colnames(tunis_matrix),
+           dim1=tunis_PCA$ind$coord[,1],
+           dim2=tunis_PCA$ind$coord[,2],
+           dim3=tunis_PCA$ind$coord[,3],
+           dim4=tunis_PCA$ind$coord[,4],
+           dim5=tunis_PCA$ind$coord[,5],
+           dim6=tunis_PCA$ind$coord[,6],
+           dim7=tunis_PCA$ind$coord[,7],
+           dim8=tunis_PCA$ind$coord[,8],
+           dim9=tunis_PCA$ind$coord[,9],
+           dim10=tunis_PCA$ind$coord[,10]) %>% 
+  ggplot(aes(y=dim8,x=dim9)) + 
+  geom_text(aes(label=username)) +
+  theme_minimal()
+
+# Now we'll try a similar thing for Egypt
+
+# combined_data_egypt_all <- complete(ungroup(combined_data_egypt),
+#                                     rt_ids,cit_ids,
+#                                     fill=list(nn=0))
+spread_cairo <- ungroup(combined_data_egypt) %>% 
+  select(username,nn,rt_ids) %>% spread(key = username,value=nn,
+                       fill=0)
+cairo_matrix <- select(spread_cairo,-matches('id')) %>% as.matrix
+row.names(cairo_matrix) <- spread_cairo$rt_ids 
+#remove singletons
+check_rows <- apply(cairo_matrix,1,function(r) {
+  sum(r>0)
+})
+# cairo_matrix <- cairo_matrix[check_rows>2,]
+# cairo_matrix_std <- apply(cairo_matrix,1,function(r) {
+#   (r / sum(r))*100
+# })
+d_egy <- dist(t(cairo_matrix))
+ord_scale_egy <- MASS::isoMDS(d_egy,k = 3)
+met_scale_egy <- cmdscale(d_egy,eig=T, k=3)
+
+data_frame(username=colnames(cairo_matrix),
+           dim1=ord_scale_egy$points[,1],
+           dim2=ord_scale_egy$points[,2],
+           dim3=ord_scale_egy$points[,3]) %>% 
+  left_join(distinct_code,'username') %>% 
+  mutate(coding=fct_recode(factor(coding_num),`Islamist Egypt`='1',
+                                      `Islamist Tunisia`='2',
+                                      `Secularist Egypt`='3',
+                                      `Secularist Tunisia`='4'),
+         coding=fct_relevel(coding,'Secularist Egypt')) %>% 
+  #filter(dim1<100 & dim1>-100,dim2<100 & dim2>-100,dim3<50,dim3>-50) %>% 
+  ggplot(aes(y=dim1,x=dim2,colour=coding)) + 
+  geom_point(aes(size=coding),alpha=0.5) +
+  theme_minimal() +
+  theme(panel.grid=element_blank())
+  #geom_text(aes(label=username)) +
+
+
+data_frame(username=colnames(cairo_matrix),
+           dim1=ord_scale_egy$points[,1],
+           dim2=ord_scale_egy$points[,2],
+           dim3=ord_scale_egy$points[,3]) %>% 
+  left_join(distinct_code,'username') %>% 
+  mutate(coding=fct_recode(factor(coding_num),`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4'),
+         coding=fct_relevel(coding,'Secularist Egypt')) %>% 
+  #filter(coding=='Islamist Egypt') %>% 
+  #filter(dim1<2 & dim1>-2,dim2<2 & dim2>-2,dim3<2 & dim3>-2) %>% 
+  plot_ly(x=~dim1,y=~dim2,z=~dim3,text=~username,color=~coding) %>% 
+  add_markers()
+
+data_frame(username=colnames(cairo_matrix),
+           dim1=ord_scale_egy$points[,1],
+           dim2=ord_scale_egy$points[,2],
+           dim3=ord_scale_egy$points[,3]) %>% 
+  left_join(distinct_code,'username') %>% 
+  mutate(coding=fct_recode(factor(coding_num),`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4'),
+         coding=fct_relevel(coding,'Secularist Egypt')) %>% 
+  #filter(coding=='Islamist Egypt') %>% 
+  #filter(dim1<2 & dim1>-2,dim2<2 & dim2>-2,dim3<2 & dim3>-2) %>% 
+  plot_ly(x=~dim1,y=~reorder(username,dim1),text=~username,color=~coding) %>% 
+  add_markers()
+
+  
+
+
+all_alphas <- rstan::extract(out_fit_id_egypt,'alpha_2d')[[1]] %>% apply(2,function(c) {
   data_frame(mean_est=mean(c),
              high=quantile(c,0.9),
              low=quantile(c,0.1)) %>% 
@@ -236,8 +411,8 @@ all_alphas %>%
   theme(panel.grid = element_blank(),
         axis.text.x = element_blank()) +
   coord_flip() +
-  facet_wrap(facets = ~coding,scales='free_y') + ylab('')
-
+  facet_wrap(facets = ~coding,scales='free_y') + xlab('') + 
+  ylab('Clustering Coefficient from IRT Model')
 #country panels
 all_alphas %>% 
   filter(!is.na(coding)) %>% 
@@ -253,82 +428,65 @@ ggsave('clustering_1d.png',width=15,height=10,units='in')
 
 #ideology panels
 
+#1 and 2-d panels
 
-mcmc_intervals(to_plot,regex_pars = 'alpha')
-mcmc_trace(to_plot,pars='alpha[50]')
-mcmc_trace(to_plot,pars='sigma_beta')
-mcmc_trace(to_plot,pars='sigma_delta')
-mcmc_trace(to_plot,pars='gamma2[2]')
-
-mcmc_intervals(to_plot,regex_pars = c('gamma1|gamma2'))
-mcmc_intervals(to_plot,regex_pars = c('alpha'))
-
-gamma1 <- rstan::extract(out_fit_id,pars='gamma1')$gamma1
-
-gamma2 <- rstan::extract(out_fit_id,pars='gamma2')$gamma2
-
-all_gammas <- data_frame(Islamists=gamma1[,2]-gamma1[,1],
-                         Secularists=gamma2[,2]-gamma2[,1]) %>% 
-  gather(`Ideological\nPairing`,Difference) %>% 
-  group_by(`Ideological\nPairing`) %>% 
-  mutate(mean_val=median(Difference))
-
-ggplot(all_gammas,aes(x=Difference)) +
-  geom_density(aes(fill=`Ideological\nPairing`),colour=NA,alpha=0.5,adjust=0.5) +
-  theme_minimal() +
-  theme(panel.grid = element_blank()) +
-  xlab('Gamma Difference') +
-  ylab('Posterior Density') +
-  geom_vline(aes(xintercept=mean_val,linetype=`Ideological\nPairing`))
-
-summarize(all_gammas,mean_val=mean(Difference),
-          median_val=median(Difference),
-          upper=quantile(Difference,0.9),
-          lower=quantile(Difference,0.1))
-
-get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
-get_time <- get_time[sample(1:nrow(get_time),101),,]
-get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
-  lapply(as_data_frame) %>% 
-  bind_rows(.id='Series') %>% 
-  mutate(Series=factor(Series),
-         Series=fct_recode(Series,`Islamist Egypt`='1',
+all_alphas_1d <- rstan::extract(out_fit_id_tunis,'alpha_1d')[[1]] %>% apply(2,function(c) {
+  data_frame(mean_est_1d=mean(c),
+             high_1d=quantile(c,0.9),
+             low_1d=quantile(c,0.1)) %>% 
+    return()
+}) %>% bind_rows() %>% 
+  mutate(user_name=distinct_code$username,
+         coding=fct_recode(factor(distinct_code$coding_num),`Islamist Egypt`='1',
                            `Islamist Tunisia`='2',
                            `Secularist Egypt`='3',
-                           `Secularist Tunisia`='4')) %>% 
-  gather(time_pts,out_vals,-Series) %>% 
-  mutate(time_pts=as.numeric(factor(time_pts)))
+                           `Secularist Tunisia`='4'),
+         country=fct_collapse(coding,Egypt=c('Secularist Egypt',
+                                             'Islamist Egypt'),
+                              Tunisia=c('Secularist Tunisia',
+                                        'Islamist Tunisia')),
+         ideology=fct_collapse(coding,Secularist=c('Secularist Egypt',
+                                                   'Secularist Tunisia'),
+                               Islamist=c('Islamist Egypt',
+                                          'Islamist Tunisia')))
 
-get_time %>% 
-  filter(time_pts<93) %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_smooth() + theme_minimal() +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='')
+all_alphas_2d <- rstan::extract(out_fit_id_tunis,'alpha_2d')[[1]] %>% apply(2,function(c) {
+  data_frame(mean_est_2d=mean(c),
+             high_2d=quantile(c,0.9),
+             low_2d=quantile(c,0.1)) %>% 
+    return()
+}) %>% bind_rows() %>% 
+  mutate(user_name=distinct_code$username,
+         coding=fct_recode(factor(distinct_code$coding_num),`Islamist Egypt`='1',
+                           `Islamist Tunisia`='2',
+                           `Secularist Egypt`='3',
+                           `Secularist Tunisia`='4'),
+         country=fct_collapse(coding,Egypt=c('Secularist Egypt',
+                                             'Islamist Egypt'),
+                              Tunisia=c('Secularist Tunisia',
+                                        'Islamist Tunisia')),
+         ideology=fct_collapse(coding,Secularist=c('Secularist Egypt',
+                                                   'Secularist Tunisia'),
+                               Islamist=c('Islamist Egypt',
+                                          'Islamist Tunisia')))
 
-get_time %>% 
-  filter(time_pts<93) %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
-  stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='') + 
-  geom_vline(aes(xintercept=32),linetype=3)
+combined_alpha <- bind_cols(all_alphas_1d,all_alphas_2d)
 
-ggsave('arab_ideology.png')
+out_plot <- combined_alpha %>% 
+  filter(!is.na(coding)) %>% 
+  ggplot(aes(y=mean_est_1d,x=mean_est_2d)) +
+  geom_point(aes(size=abs(((high_2d+high_1d)/2)-((low_1d+low_2d)/2)),colour=coding),alpha=0.5) +
+  geom_text(aes(label=user_name),check_overlap = T) +
+  theme_minimal() +
+  theme(panel.grid = element_blank()) 
+  # coord_flip() +
+  # facet_wrap(facets = ~country,scales='free_y') + xlab('') + 
+  ylab('Clustering Coefficient from IRT Model')
+ggplotly(out_plot)
+ggsave('clustering_1d.png',width=15,height=10,units='in')
 
-
-deltas <- rstan::extract(out_fit_id,pars='delta',permuted=T)$delta
-betas <- rstan::extract(out_fit_id,pars='beta',permuted=T)$beta
-apply(deltas,2,mean) %>% hist
-apply(betas,2,mean) %>% hist
 lookat <- summary(out_fit_id)
 hist(lookat$summary[,'Rhat'])
 # 
 non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
- mcmc_trace(to_plot,regex_pars='adj')
 # mcmc_trace(to_plot,pars='lp__')

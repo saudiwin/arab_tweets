@@ -166,101 +166,14 @@ lookat_cit_patriot <- lookat_cit_ratio %>%
 #combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
 combined_data_small_nomis  <- ungroup(combined_data_small_nomis) %>% 
   mutate(cit_ids=as.numeric(factor(rt_ids))) 
-combined_zero <- select(combined_data_small_nomis,time_three,coding_num,coup,nn,cit_ids) %>% 
-                        complete(cit_ids,coding_num,time_three,fill=list(nn=0)) %>% 
-  mutate(coup=if_else(time_three>coup_day_new,2L,1L))
-#test complete
-
-test_d <- data_frame(rt_ids=c(1,1,1,2,2,3,4),
-                     coding_num=c(1,2,3,3,4,2,1),
-                     nn=c(3,2,5,6,3,1,5))
-
-#Now need to add zeros
-
-
-
-# start_func <- function() {
-#   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
-#                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
-#        gamma1=c(0.5,0.5),
-#        gamma2=c(0.5,0.5),
-#        ts_sigma=rep(0.25,4),
-#        adj=c(1,1),
-#        mean_delta=0,
-#        mean_beta=0,
-#        sigma_beta=1,
-#        sigma_delta=1,
-#        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-#        delta=rnorm(max(combined_data_small_nomis$cit_ids)),
-#        gamma_par1=0,
-#        gamma_par2=0)
-# }
-
-# run it again, and this time constrain deltas
-
-# get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
-# 
-# mean_vals <- apply(get_time,2,mean)
-# sd_vals <- apply(get_time,2,sd)
-# filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
-#   filter(sd_vals<2)
-# 
-# # number to identify
-# id_num_high <- 40
-# id_num_low <- 4
-# top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
-# bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
-# 
-# new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
-#   as.numeric
-# 
-# new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
-# 
-# combined_data_small_nomis$cit_ids <- new_vals
-
-# code_compile <- stan_model(file='ord_irt_v1.stan')
-# 
-# out_fit <- vb(code_compile,
-#                     data=list(J=max(combined_data_small_nomis$coding_num),
-#                               K=max(combined_data_small_nomis$cit_ids),
-#                               `T`=max(combined_data_small_nomis$time_three),
-#                               N=nrow(combined_data_small_nomis),
-#                               C=3,
-#                               jj=combined_data_small_nomis$coding_num,
-#                               kk=combined_data_small_nomis$cit_ids,
-#                               tt=combined_data_small_nomis$time_three,
-#                               y=as.integer(combined_data_small_nomis$nn),
-#                               coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-#                               start_vals=c(-1,-1,1,1),
-#                               time_gamma=times$coup[-nrow(times)]),
-#                     init=start_func)
-# 
-# # run it again, and this time constrain deltas
-# 
-# get_time <- rstan::extract(out_fit,pars='delta',permute=T)$delta
-# 
-# mean_vals <- apply(get_time,2,mean)
-# sd_vals <- apply(get_time,2,sd)
-# filtered <- data_frame(mean_vals,sd_vals,discrim_id=1:ncol(get_time)) %>% 
-#   filter(sd_vals<2)
-# 
-# # number to identify
-# id_num_high <- 20
-# id_num_low <- 4
-# top_two <- dplyr::arrange(filtered,desc(mean_vals)) %>% slice(1:id_num_high) %>% pull(discrim_id)
-# bottom_two <- dplyr::arrange(filtered,mean_vals) %>% slice(1:id_num_low) %>% pull(discrim_id)
-# 
-# # new_vals <- factor(combined_data_small_nomis$cit_ids) %>% fct_relevel(as.character(c(top_two,bottom_two))) %>% 
-# #   as.numeric
-# # 
-# # new_vals[which(combined_data_small_nomis$cit_ids %in% top_two)]
-# # 
-# # combined_data_small_nomis$cit_ids <- new_vals
+# combined_zero <- select(combined_data_small_nomis,time_three,coding_num,coup,nn,cit_ids) %>% 
+#                         complete(cit_ids,coding_num,time_three,fill=list(nn=0)) %>% 
+#   mutate(coup=if_else(time_three>coup_day_new,2L,1L))
 
 
 start_func <- function() {
   list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
-                   matrix(rep(0, (max(combined_zero$time_three)-1)*4),ncol=4)),
+                   matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
@@ -270,18 +183,21 @@ start_func <- function() {
        mean_beta=1,
        sigma_beta_1=1,
        sigma_beta_0=1,
+       sigma_beta=1,
        sigma_delta=.8,
        shape=1,
-       beta_1=rnorm(max(combined_zero$cit_ids)),
-       beta_0=rnorm(max(combined_zero$cit_ids)),
-       delta_1=rnorm(max(combined_zero$cit_ids)),
-       delta_0=rnorm(max(combined_zero$cit_ids)),
+       beta_1=rnorm(max(combined_data_small_nomis$cit_ids)),
+       beta_0=rnorm(max(combined_data_small_nomis$cit_ids)),
+       delta_1=rnorm(max(combined_data_small_nomis$cit_ids)),
+       delta_0=rnorm(max(combined_data_small_nomis$cit_ids)),
+       beta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
        gamma_par1=0,
        gamma_par2=0)
 }
 
 
-code_compile <- stan_model(file='poisson_irt_zip.stan')
+code_compile <- stan_model(file='poisson_irt_v3.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -308,18 +224,18 @@ this_time <- Sys.time()
 
 
 out_fit_id <- vb(code_compile,
-                    data=list(J=max(combined_zero$coding_num),
-                              K=max(combined_zero$cit_ids),
-                              `T`=max(combined_zero$time_three),
-                              N=nrow(combined_zero),
-                              C=max(combined_zero$nn),
+                    data=list(J=max(combined_data_small_nomis$coding_num),
+                              K=max(combined_data_small_nomis$cit_ids),
+                              `T`=max(combined_data_small_nomis$time_three),
+                              N=nrow(combined_data_small_nomis),
+                              C=max(combined_data_small_nomis$nn),
                               id_num_high=1,
                               id_num_low=1,
-                              jj=combined_zero$coding_num,
-                              kk=combined_zero$cit_ids,
-                              tt=combined_zero$time_three,
-                              y=as.integer(combined_zero$nn),
-                              coup=as.integer(floor(max(combined_zero$time_three)/2)),
+                              jj=combined_data_small_nomis$coding_num,
+                              kk=combined_data_small_nomis$cit_ids,
+                              tt=combined_data_small_nomis$time_three,
+                              y=as.integer(combined_data_small_nomis$nn),
+                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)

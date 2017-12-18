@@ -101,13 +101,10 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
-<<<<<<< HEAD
-# combined_data_small_nomis <- filter(combined_data_small_nomis,
-#                                     nn<6)
-=======
-combined_data_small_nomis <- mutate(combined_data_small_nomis,
-                                    nn=if_else(nn==6,4L,nn))
->>>>>>> ae9f259a614b7d64ee3239c5faeaab9950090894
+
+# combined_data_small_nomis <- mutate(combined_data_small_nomis,
+#                                     nn=if_else(nn==6,4L,nn))
+
 
 # let's look at histograms of tweets
 
@@ -247,7 +244,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='nb_irt_id_v3.stan')
+code_compile <- stan_model(file='poisson_irt_id_v4.stan')
 
 
 # out_fit_vb <- vb(code_compile,
