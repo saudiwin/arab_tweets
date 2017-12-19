@@ -88,12 +88,20 @@ combined_data <- left_join(combined_data,
 
 times <- distinct(times,time_three,coup)
 
-combined_data_small <- left_join(combined_data,
-                                 elite_codings2,
+combined_data_small <- group_by(combined_data,
+                                coup,
+                                time_three,
+                                username,
+                                rt_ids) %>% count
+
+
+
+# add in codings
+
+combined_data_small <- ungroup(combined_data_small) %>% left_join(elite_codings2,
                                  by=c('username'='Username')) %>% 
-                                   group_by(time_three,
-                                coding_num,
-                                rt_ids,coup) %>% tally
+  mutate(user_ids=as.numeric(factor(username)),
+         cit_ids=as.numeric(factor(rt_ids)))
 
 # drop missing
 
@@ -101,10 +109,8 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
-
-# combined_data_small_nomis <- mutate(combined_data_small_nomis,
-#                                     nn=if_else(nn==6,4L,nn))
-
+combined_data_small_nomis <- filter(combined_data_small_nomis,
+                                    nn<6)
 
 # let's look at histograms of tweets
 
@@ -141,12 +147,15 @@ lookat_cit_top <- lookat_cit_ratio %>%
 lookat_cit_patriot <- lookat_cit_ratio %>% 
   filter(prop_group==1)
 
-combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
-  ungroup() %>% 
-  mutate(cit_ids=as.numeric(factor(rt_ids)))
+combined_data_small_nomis <- filter(combined_data_small_nomis, !(rt_ids %in% lookat_cit_patriot$rt_ids)) %>% 
+  mutate(cit_ids=as.numeric(factor(cit_ids)))
+
+# get rid of people who only retweet one ideological group
+
+
 
 # start_func <- function() {
-#   list(alpha=rbind(matrix(c(-1,-1,1,1),ncol=4),
+#   list(alpha_d2=rbind(matrix(c(-1,-1,1,1),ncol=4),
 #                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
 #        gamma1=c(0.5,0.5),
 #        gamma2=c(0.5,0.5),
@@ -225,8 +234,9 @@ combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patr
 
 
 start_func <- function() {
-  list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
+  list(alpha_d2=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
                    matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
+      alpha_d1=rnorm(4),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
@@ -236,15 +246,17 @@ start_func <- function() {
        mean_beta=1,
        sigma_beta=1,
        sigma_delta=.8,
-       shape=1,
+      sigma_time=1,
+      countries=rnorm(2),
        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       delta_d1=rnorm(max(combined_data_small_nomis$cit_ids),0,5),
+      delta_d2=rnorm(max(combined_data_small_nomis$cit_ids),0,5),
        gamma_par1=0,
        gamma_par2=0)
 }
 
 
-code_compile <- stan_model(file='poisson_irt_id_v4.stan')
+code_compile <- stan_model(file='ord_irt_id_v7.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -267,8 +279,7 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-
-out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
+out_fit_id <- sampling(code_compile,chains=4,cores=4,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
                               `T`=max(combined_data_small_nomis$time_three),
@@ -277,6 +288,7 @@ out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
                               id_num_high=1,
                               id_num_low=1,
                               jj=combined_data_small_nomis$coding_num,
+                              country_num=as.integer(if_else(combined_data_small_nomis$coding_num %in% c(1,3),1,2)),
                               kk=combined_data_small_nomis$cit_ids,
                               tt=combined_data_small_nomis$time_three,
                               y=as.integer(combined_data_small_nomis$nn),
@@ -284,19 +296,17 @@ out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+#saveRDS(out_fit_id,paste0('out_fit_vb_',this_time,'.rds'))
 #drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
-mcmc_trace(to_plot,pars='alpha[50,4]')
-mcmc_trace(to_plot,pars='sigma_beta')
-mcmc_trace(to_plot,pars='sigma_delta')
-mcmc_trace(to_plot,pars='gamma2[2]')
+mcmc_trace(to_plot,pars='alpha_d2[50,4]')
+
 
 mcmc_intervals(to_plot,regex_pars = c('gamma1|gamma2'))
-mcmc_intervals(to_plot,regex_pars = c('alpha'))
+mcmc_intervals(to_plot,regex_pars = c('alpha_d2'))
 
 gamma1 <- rstan::extract(out_fit_id,pars='gamma1')$gamma1
 
@@ -321,7 +331,7 @@ summarize(all_gammas,mean_val=mean(Difference),
           upper=quantile(Difference,0.9),
           lower=quantile(Difference,0.1))
 
-get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
+get_time <- rstan::extract(out_fit_id,pars='alpha_d2',permute=T)$alpha_d2
 get_time <- get_time[sample(1:nrow(get_time),101),,]
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
@@ -335,7 +345,7 @@ get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>%
   mutate(time_pts=as.numeric(factor(time_pts)))
 
 get_time %>% 
-  filter(time_pts<93) %>% 
+  filter(time_pts<92) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
   stat_smooth() + theme_minimal() +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
@@ -357,10 +367,11 @@ get_time %>%
 ggsave('arab_ideology.png')
 
 
-deltas <- rstan::extract(out_fit_id,pars='delta',permuted=T)$delta
+deltas2 <- rstan::extract(out_fit_id,pars='delta_d2',permuted=T)$delta_d2
+deltas1 <- rstan::extract(out_fit_id,pars='delta_d1',permuted=T)$delta_d1
 betas <- rstan::extract(out_fit_id,pars='beta',permuted=T)$beta
-apply(deltas,2,mean) %>% hist
-apply(betas,2,mean) %>% hist
+apply(deltas1,2,mean) %>% hist
+#apply(betas,2,mean) %>% hist
 lookat <- summary(out_fit_id)
 hist(lookat$summary[,'Rhat'])
 # 

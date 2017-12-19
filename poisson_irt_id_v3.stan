@@ -20,7 +20,7 @@ parameters {
   matrix[T,J] alpha;               // ability of student j - mean ability
   vector[K] beta;                // difficulty of question k
   vector[2] adj;
-  ordered[C-1] steps;
+  //ordered[C-1] steps;
   // vector<lower=0>[4] ts_sigma;
   vector<lower=0,upper=1>[2] gamma1;
   vector<lower=0,upper=1>[2] gamma2;
@@ -41,8 +41,9 @@ transformed parameters {
 }
 
 model {
-  //alpha[1,1] ~ normal(start_vals[1],0.01);
-  alpha[1,] ~ normal(0,1);
+  alpha[1,1] ~ normal(start_vals[1],0.01);
+  alpha[1,4] ~ normal(start_vals[4],0.01);
+  alpha[1,2:3] ~ normal(0,1);
 // delta_con_low ~ normal(0,3);
 // delta_con_high ~ normal(0,3);
   //gamma_par1 ~ normal(0,2);
@@ -51,8 +52,8 @@ model {
   gamma1 ~ normal(0,3);
   gamma2 ~ normal(0,3);
   //mean_beta ~ normal(0,1);
-  for(c in 1:(C-2)) 
-    steps[c+1] - steps[c] ~ normal(0,5); 
+  //for(c in 1:(C-2)) 
+    //steps[c+1] - steps[c] ~ normal(0,5); 
   adj ~ normal(1,.25);
   mean_delta ~ normal(0,1);
   sigma_time ~ exponential(.1);
@@ -73,8 +74,8 @@ sigma_time);
   
   beta ~ normal(0,sigma_beta);          
 
-  delta ~ normal(mean_delta,sigma_delta);   
+  delta ~ normal(0,5);   
 
   for(n in 1:N)
-    y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
+    y[n] ~ poisson_log(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]]);
 }

@@ -101,10 +101,8 @@ combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
 # drop the random six in the dataset
 
-
-# combined_data_small_nomis <- mutate(combined_data_small_nomis,
-#                                     nn=if_else(nn==6,4L,nn))
-
+# combined_data_small_nomis <- filter(combined_data_small_nomis,
+#                                     nn<6)
 
 # let's look at histograms of tweets
 
@@ -232,11 +230,12 @@ start_func <- function() {
        ts_sigma=rep(0.25,4),
        adj1=c(1,1),
        adj2=c(1,1),
+       adj=c(1,1),
        mean_delta=1,
        mean_beta=1,
        sigma_beta=1,
        sigma_delta=.8,
-       shape=1,
+       sigma_time=.25,
        beta=rnorm(max(combined_data_small_nomis$cit_ids)),
        delta=rnorm(max(combined_data_small_nomis$cit_ids)),
        gamma_par1=0,
@@ -267,7 +266,6 @@ this_time <- Sys.time()
 # saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
 # drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
 # cores=4,thin=5,
-
 out_fit_id <- sampling(code_compile,cores=4,chains=4,iter=1200,warmup=1000,
                     data=list(J=max(combined_data_small_nomis$coding_num),
                               K=max(combined_data_small_nomis$cit_ids),
@@ -365,6 +363,5 @@ lookat <- summary(out_fit_id)
 hist(lookat$summary[,'Rhat'])
 # 
 non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
- mcmc_trace(to_plot,regex_pars='steps')
- mcmc_trace(to_plot,pars='delta[7000]')
+ mcmc_trace(to_plot,regex_pars='adj')
 # mcmc_trace(to_plot,pars='lp__')

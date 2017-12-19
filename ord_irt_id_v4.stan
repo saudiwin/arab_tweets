@@ -73,7 +73,7 @@ sigma_time);
   
   beta ~ normal(0,sigma_beta);          
 
-  delta ~ normal(mean_delta,sigma_delta);   
+  delta ~ normal(0,5);   
 
   for(n in 1:N)
     y[n] ~ ordered_logistic(delta[kk[n]]*alpha[tt[n],jj[n]] - beta[kk[n]],steps);
