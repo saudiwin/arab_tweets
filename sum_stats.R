@@ -19,7 +19,10 @@ gamma11 <- rstan::extract(out_fit_id,pars='gamma11')$gamma11
 gamma12 <- rstan::extract(out_fit_id,pars='gamma12')$gamma12
 gamma21 <- rstan::extract(out_fit_id,pars='gamma21')$gamma21
 gamma22 <- rstan::extract(out_fit_id,pars='gamma22')$gamma22
-
+# gamma11 <- rstan::extract(out_fit_id,pars='gamma1[1]')$`gamma1[1]` %>% cbind(.,.)
+# gamma12 <- rstan::extract(out_fit_id,pars='gamma1[2]')$`gamma1[2]` %>% cbind(.,.)
+# gamma21 <- rstan::extract(out_fit_id,pars='gamma2[1]')$`gamma2[1]` %>% cbind(.,.)
+# gamma22 <- rstan::extract(out_fit_id,pars='gamma2[2]')$`gamma2[2]` %>% cbind(.,.)
 
 
 all_gammas <- data_frame(`Egyptian Islamists`=gamma11[,2]-gamma11[,1],

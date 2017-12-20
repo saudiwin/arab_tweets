@@ -40,11 +40,8 @@ tunisia <- lapply(all_files,function(f) {
   data1 <- select(data1,one_of(exist_names))
   return(data1)
 }) %>% bind_rows
-<<<<<<< HEAD
-=======
 
 saveRDS(tunisia,'data/all_elites_tweets.rds')
 
 dbDisconnect(tunis_sql)
 dbDisconnect(egypt_sql)
->>>>>>> 8817f37f653d7b071719b7da5585e6907ebee3e5
