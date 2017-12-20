@@ -99,8 +99,8 @@ get_time %>%
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Country + Religion) +
   scale_linetype(name='') + 
-  geom_vline(aes(xintercept=32),linetype=3) +
-  scale_x_continuous(breaks=c(6,32,75),
+  geom_vline(aes(xintercept=coup_day_new),linetype=3) +
+  scale_x_continuous(breaks=c(6,coup_day_new,75),
                      labels=c('2013-03-31','2013-07-02','2013-11-08'))
 ggsave('arab_ideology.png')
 
@@ -110,8 +110,8 @@ get_time %>%
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Country)) + theme_minimal() +
   facet_wrap(~Religion,ncol=1,scales='free_y') +
   theme(panel.grid=element_blank()) + xlab('')  + ylab('Ideological Positions') + 
-  geom_vline(aes(xintercept=32),linetype=4) +
-  scale_x_continuous(breaks=c(6,32,75),
+  geom_vline(aes(xintercept=coup_day_new),linetype=4) +
+  scale_x_continuous(breaks=c(6,coup_day_new,75),
                      labels=c('2013-03-31','2013-07-02','2013-11-08'))
 ggsave('religion_coint.png')
 
@@ -121,8 +121,8 @@ get_time %>%
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Religion)) + theme_minimal() +
   facet_wrap(~Country,ncol=1,scales='free_y') +
   theme(panel.grid=element_blank()) + xlab('')  + ylab('Ideological Positions') + 
-  geom_vline(aes(xintercept=32),linetype=4) +
-  scale_x_continuous(breaks=c(6,32,75),
+  geom_vline(aes(xintercept=coup_day_new),linetype=4) +
+  scale_x_continuous(breaks=c(6,coup_day_new,75),
                      labels=c('2013-03-31','2013-07-02','2013-11-08'))
 ggsave('country_coint.png')
 
@@ -231,16 +231,16 @@ ggsave('irf_egypt_overlap.png')
 
 is_prec2 <- irf(gamma2=gamma11[,1],
                 gamma1=gamma12[,1],
-                adj=adj[,1])
+                adj=1/adj[,1])
 is_post2 <- irf(gamma2=gamma11[,2],
                 gamma1=gamma12[,2],
-                adj=adj[,1])
+                adj=1/adj[,1])
 se_prec2 <- irf(gamma2=gamma21[,1],
                 gamma1=gamma22[,1],
-                adj=adj[,2])
+                adj=1/adj[,2])
 se_post2 <- irf(gamma2=gamma21[,2],
                 gamma1=gamma22[,2],
-                adj=adj[,2])
+                adj=1/adj[,2])
 
 all_irfs2 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec2,
                             `Islamists\nPost-Coup`=is_post2,
