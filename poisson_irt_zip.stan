@@ -25,7 +25,7 @@ parameters {
   vector[2] gamma22;
   vector[2] gamma12;
   vector[2] gamma21;
-  real<lower=0> sigma_time;
+  vector<lower=0>[4] sigma_time;
   real<lower=0> sigma_beta_0;
   real<lower=0> sigma_beta_1;
 }
@@ -57,13 +57,13 @@ model {
   //sigma_delta ~ exponential(.1);
 
   alpha[2:T,1] ~ normal(alpha[1:(T-1),1] - gamma11[time_gamma].*(alpha[1:(T-1),1] - (adj[1])*alpha[1:(T-1),2]),
-sigma_time);
+sigma_time[1]);
   alpha[2:T,2] ~ normal(alpha[1:(T-1),2] - gamma12[time_gamma].*(alpha[1:(T-1),2] - (1/adj[1])*alpha[1:(T-1),1]),
-sigma_time);
+sigma_time[2]);
   alpha[2:T,3] ~ normal(alpha[1:(T-1),3] - gamma21[time_gamma].*(alpha[1:(T-1),3] - (adj[2])*alpha[1:(T-1),4]),
-      sigma_time);
+      sigma_time[3]);
   alpha[2:T,4] ~ normal(alpha[1:(T-1),4] - gamma22[time_gamma].*(alpha[1:(T-1),4] - (1/adj[2])*alpha[1:(T-1),3]),
-        sigma_time);
+        sigma_time[4]);
 
   
   //post-coup gammas

@@ -140,7 +140,7 @@ ggplot(lookat,aes(y=sum_count,x=time_three)) + geom_path() + theme_minimal() + f
                               coup_day_new,
                               times$time_three[times$time==yday('2013-11-08')]),
                      labels=c('2013-03-31','2013-07-02','2013-11-08')) +
-  geom_vline(aes(xintercept=32),linetype=3)
+  geom_vline(aes(xintercept=coup_day_new),linetype=3)
 
 ggsave('retweets_counts.png')
 
@@ -166,16 +166,18 @@ lookat_cit_patriot <- lookat_cit_ratio %>%
 #combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
 combined_data_small_nomis  <- ungroup(combined_data_small_nomis) %>% 
   mutate(cit_ids=as.numeric(factor(rt_ids))) 
-# combined_zero <- select(combined_data_small_nomis,time_three,coding_num,coup,nn,cit_ids) %>% 
-#                         complete(cit_ids,coding_num,time_three,fill=list(nn=0)) %>% 
-#   mutate(coup=if_else(time_three>coup_day_new,2L,1L))
+combined_zero <- select(combined_data_small_nomis,time_three,coding_num,coup,nn,cit_ids) %>%
+                        complete(cit_ids,coding_num,time_three,fill=list(nn=0)) %>%
+  mutate(coup=if_else(time_three>coup_day_new,2L,1L))
 
 
 start_func <- function() {
   list(alpha=rbind(matrix(c(-.5,-.5,.5,.5),ncol=4),
-                   matrix(rep(0, (max(combined_data_small_nomis$time_three)-1)*4),ncol=4)),
-       gamma1=c(0.5,0.5),
-       gamma2=c(0.5,0.5),
+                   matrix(rep(0, (max(combined_zero$time_three)-1)*4),ncol=4)),
+       gamma11=c(0.5,0.5),
+       gamma12=c(0.5,0.5),
+       gamma21=c(0.5,0.5),
+       gamma22=c(0.5,0.5),
        ts_sigma=rep(0.25,4),
        adj1=c(1,1),
        adj2=c(1,1),
@@ -185,19 +187,20 @@ start_func <- function() {
        sigma_beta_0=1,
        sigma_beta=1,
        sigma_delta=.8,
+       sigma_time=rep(.25,4),
        shape=1,
-       beta_1=rnorm(max(combined_data_small_nomis$cit_ids)),
-       beta_0=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta_1=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta_0=rnorm(max(combined_data_small_nomis$cit_ids)),
-       beta=rnorm(max(combined_data_small_nomis$cit_ids)),
-       delta=rnorm(max(combined_data_small_nomis$cit_ids)),
+       beta_1=rnorm(max(combined_zero$cit_ids)),
+       beta_0=rnorm(max(combined_zero$cit_ids)),
+       delta_1=rnorm(max(combined_zero$cit_ids)),
+       delta_0=rnorm(max(combined_zero$cit_ids)),
+       beta=rnorm(max(combined_zero$cit_ids)),
+       delta=rnorm(max(combined_zero$cit_ids)),
        gamma_par1=0,
        gamma_par2=0)
 }
 
 
-code_compile <- stan_model(file='poisson_irt_v3.stan')
+code_compile <- stan_model(file='poisson_irt_zip.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -224,18 +227,18 @@ this_time <- Sys.time()
 
 
 out_fit_id <- vb(code_compile,
-                    data=list(J=max(combined_data_small_nomis$coding_num),
-                              K=max(combined_data_small_nomis$cit_ids),
-                              `T`=max(combined_data_small_nomis$time_three),
-                              N=nrow(combined_data_small_nomis),
-                              C=max(combined_data_small_nomis$nn),
+                    data=list(J=max(combined_zero$coding_num),
+                              K=max(combined_zero$cit_ids),
+                              `T`=max(combined_zero$time_three),
+                              N=nrow(combined_zero),
+                              C=max(combined_zero$nn),
                               id_num_high=1,
                               id_num_low=1,
-                              jj=combined_data_small_nomis$coding_num,
-                              kk=combined_data_small_nomis$cit_ids,
-                              tt=combined_data_small_nomis$time_three,
-                              y=as.integer(combined_data_small_nomis$nn),
-                              coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
+                              jj=combined_zero$coding_num,
+                              kk=combined_zero$cit_ids,
+                              tt=combined_zero$time_three,
+                              y=as.integer(combined_zero$nn),
+                              coup=as.integer(floor(max(combined_zero$time_three)/2)),
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
