@@ -293,7 +293,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='std_irt_zip.stan')
+code_compile <- stan_model(file='std_irt_zip_betax.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -377,13 +377,13 @@ ggsave('arab_ideology.png')
 
 
 deltas <- rstan::extract(out_fit_id,pars='delta_1',permuted=T)$delta
-betas <- rstan::extract(out_fit_id,pars='beta_1',permuted=T)$beta
+betas <- rstan::extract(out_fit_id,pars='beta_0',permuted=T)$beta
 apply(deltas,2,mean) %>% hist
 apply(betas,2,mean) %>% hist
 lookat <- summary(out_fit_id)
-hist(lookat$summary[,'Rhat'])
+#hist(lookat$summary[,'Rhat'])
 # 
-non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
+#non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
  mcmc_trace(to_plot,regex_pars='steps')
  mcmc_trace(to_plot,pars='delta[7000]')
 # mcmc_trace(to_plot,pars='lp__')

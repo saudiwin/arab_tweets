@@ -11,18 +11,6 @@ require(forcats)
 require(googledrive)
 require(lubridate)
 
-#Load in codings
-# elite_coding <- read_csv('data/Coding Comparison - Sheet1.csv') %>%
-#   mutate(final_code=coalesce(`Dana Coding`,
-#                              `Hana Coding`)) %>%
-#   separate(final_code,into=c('Religion','Regime'),sep='-') %>%
-#   mutate(country=c(rep('Tunisia',64),
-#                    rep('Egypt',n()-64)),
-#          coding=paste0(Religion,'_',country)) %>%
-#   filter(!is.na(Religion)) %>%
-#   mutate(coding_num=as.numeric(factor(coding)),
-#          Username=tolower(Username))
-
 # Load in revised codings
 
 elite_codings2 <- read_csv('data/check_complete.csv') %>% 
@@ -119,13 +107,6 @@ combined_data_small <- left_join(combined_data,
 
 combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
 
-# drop the random six in the dataset
-
-
-# combined_data_small_nomis <- mutate(combined_data_small_nomis,
-#                                     nn=if_else(nn==6,4L,nn))
-
-
 # let's look at histograms of tweets
 
 lookat <- group_by(combined_data_small_nomis,time_three,coding_num) %>% summarize(sum_count=sum(nn)) %>% 
@@ -202,30 +183,6 @@ start_func <- function() {
 
 code_compile <- stan_model(file='poisson_irt_zip.stan')
 
-
-# out_fit_vb <- vb(code_compile,
-#               data=list(J=max(combined_data_small_nomis$coding_num),
-#                         K=max(combined_data_small_nomis$cit_ids),
-#                         `T`=max(combined_data_small_nomis$time_three),
-#                         N=nrow(combined_data_small_nomis),
-#                         C=max(combined_data_small_nomis$nn),
-#                         id_num_high=1,
-#                         id_num_low=1,
-#                         jj=combined_data_small_nomis$coding_num,
-#                         kk=combined_data_small_nomis$cit_ids,
-#                         tt=combined_data_small_nomis$time_three,
-#                         y=as.integer(combined_data_small_nomis$nn),
-#                         coup=as.integer(floor(max(combined_data_small_nomis$time_three)/2)),
-#                         start_vals=c(-.5,-.5,.5,.5),
-#                         time_gamma=times$coup[-nrow(times)]),
-#               init=start_func)
-this_time <- Sys.time()
-# saveRDS(object = out_fit_vb,paste0('out_fit_vb_',this_time,'.rds'))
-# drive_upload(paste0('out_fit_vb_',this_time,'.rds'))
-# cores=4,thin=5,
-
-
-
 out_fit_id <- vb(code_compile,
                     data=list(J=max(combined_zero$coding_num),
                               K=max(combined_zero$cit_ids),
@@ -242,56 +199,13 @@ out_fit_id <- vb(code_compile,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-#saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
-#drive_upload(paste0('out_fit_id_',this_time,'.rds'))
+
+saveRDS(object = out_fit_id,paste0('out_fit_id_zip_pois_gc_',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_zip_pois_gc_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
 mcmc_intervals(to_plot,regex_pars = 'adj')
 mcmc_intervals(to_plot,regex_pars = c('alpha'))
 
-get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
-get_time <- get_time[sample(1:nrow(get_time),101),,]
-get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
-  lapply(as_data_frame) %>% 
-  bind_rows(.id='Series') %>% 
-  mutate(Series=factor(Series),
-         Series=fct_recode(Series,`Islamist Egypt`='1',
-                           `Islamist Tunisia`='2',
-                           `Secularist Egypt`='3',
-                           `Secularist Tunisia`='4')) %>% 
-  gather(time_pts,out_vals,-Series) %>% 
-  mutate(time_pts=as.numeric(factor(time_pts)))
 
-get_time %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_smooth() + theme_minimal() +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='')
-
-get_time %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
-  stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='') + 
-  geom_vline(aes(xintercept=coup_day_new),linetype=3)
-
-ggsave('arab_ideology.png')
-
-
-deltas <- rstan::extract(out_fit_id,pars='delta_1',permuted=T)$delta
-betas <- rstan::extract(out_fit_id,pars='beta_1',permuted=T)$beta
-apply(deltas,2,mean) %>% hist
-apply(betas,2,mean) %>% hist
-lookat <- summary(out_fit_id)
-hist(lookat$summary[,'Rhat'])
-# 
-non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
- mcmc_trace(to_plot,regex_pars='steps')
- mcmc_trace(to_plot,pars='delta[7000]')
-# mcmc_trace(to_plot,pars='lp__')
