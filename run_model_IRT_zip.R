@@ -200,7 +200,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='poisson_irt_zip.stan')
+code_compile <- stan_model(file='std_irt_zip.stan')
 
 
 # out_fit_vb <- vb(code_compile,
@@ -242,8 +242,8 @@ out_fit_id <- vb(code_compile,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=times$coup[-nrow(times)]),
                     init=start_func)
-#saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
-#drive_upload(paste0('out_fit_id_',this_time,'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_id_',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
