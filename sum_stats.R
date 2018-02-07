@@ -64,7 +64,8 @@ filter(all_gammas,!( `Ideological\nPairing` %in% c('Egyptian Islamists','Egyptia
   xlab('') +
   ylab('') +
   theme(panel.grid = element_blank()) + 
-  guides(fill='none')
+  guides(fill='none') + 
+  geom_vline(xintercept=0,linetype=3)
 
 ggsave('gamma_joy.png')
 
