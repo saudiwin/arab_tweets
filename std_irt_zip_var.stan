@@ -12,6 +12,7 @@ data {
   vector[4] start_vals;
   int coup; // when the coup happens
   int time_gamma[T-1];
+  int country_code[N]; //indicator for Tunisia
 }
 parameters {    
   vector[K] delta_1;                  // non-zero discriminations
@@ -22,7 +23,8 @@ parameters {
   vector[4] adj_in;
   vector[4] adj_out;
   vector[3] alpha_int;
-  real<lower=0> alpha_int_high;
+  real<lower=0> country;
+  real alpha_int_high;
   vector<lower=0>[4] sigma_time;
   real<lower=0> sigma_beta_0;
   real<lower=0> sigma_overall;
@@ -42,7 +44,8 @@ model {
   alpha_int ~ normal(0,1);
   adj_in ~ normal(0,1);
   adj_out ~ normal(0,1);
-  alpha_int_high ~ exponential(.1);
+  alpha_int_high ~ normal(0,1);
+  country ~ exponential(.1);
   sigma_time ~ exponential(.1);
   sigma_overall ~ exponential(.1);
   sigma_beta_0 ~ exponential(.1);
@@ -72,10 +75,14 @@ model {
   delta_0 ~ normal(0,5);
     for(n in 1:N) {
       if(y[n]==-9999) {
-        1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]]);
+        1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] +
+                            delta_0[kk[n]]*country*country_code[n]- beta_0[kk[n]]);
       } else {
-        0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]]);
-        y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n],jj[n]],sigma_overall);
+        0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] +
+                            delta_0[kk[n]]*country*country_code[n] - beta_0[kk[n]]);
+        y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n],jj[n]] +
+                      delta_1[kk[n]]*country*country_code[n],
+                      sigma_overall);
       }
     }
 }
