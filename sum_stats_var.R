@@ -27,17 +27,17 @@ get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>%
                            `Egypt Secularists`='3')) %>% 
   gather(time_pts,out_vals,-Series) %>% 
   mutate(time_pts=as.numeric(factor(time_pts))) %>% 
-  separate(Series,into=c('Country','Religion'))
+  separate(Series,into=c('Country','Religion'),remove=F)
 
 
 get_time %>% 
   filter(time_pts>0) %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
-  stat_summary(fun.y='median',geom='path',linetype=2) +
+  stat_summary(geom='ribbon',fun.data = 'median_hilow',aes(fill=Series),
+               alpha=0.5) + theme_minimal() +
+  stat_summary(fun.y='median',geom='path',aes(linetype=Series),alpha=0.5) +
   theme(panel.grid=element_blank()) + xlab('') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Country + Religion) +
+  scale_fill_brewer(palette='RdBu',name='') + 
   scale_linetype(name='') + 
   geom_vline(aes(xintercept=coup_day_new),linetype=3) +
   scale_x_continuous(breaks=c(6,coup_day_new,75),
@@ -67,29 +67,51 @@ get_time %>%
 ggsave('country_coint.png')
 
 # Let's do some impulse response functions
-adj <- rstan::extract(out_fit_id,pars='adj')$adj
+adj_in <- rstan::extract(out_fit_id,pars='adj_in')$adj_in
+adj_out <- rstan::extract(out_fit_id,pars='adj_out')$adj_out
+high_int <- rstan::extract(out_fit_id,pars='alpha_int_high')$alpha_int_high
+intercepts <- rstan::extract(out_fit_id,pars='alpha_int')$alpha_int
+sigma_time <- rstan::extract(out_fit_id,pars='sigma_time')$sigma_time
 
-irf <- function(time=1,shock=1,gamma1=NULL,
-                gamma2=NULL,
-                adj=NULL,y_1=0,x_1=0,total_t=10,
+irf <- function(time=1,shock=1,
+                intercepts=NULL,
+                adj_in=NULL,
+                adj_out=NULL,
+                beta_x = NULL,
+                y_1=0,
+                x_1=0,
+                total_t=10,
                 old_output=NULL) {
   
   # set up the exogenous shock
-  if(time==1) {
+  # unless the shock comes from an exogenous covariate beta_x
+  if(time==1 & !is.null(beta_x)) {
     x_1 <- shock 
   }
   
   if(time==1) {
-    y_1 <- rep(y_1,times=length(gamma1))
-    x_1 <- rep(x_1,times=length(gamma1))
+    y_1 <- rep(y_1,times=nrow(adj_in))
+    if(length(x_1)==1) {
+      x_1 <- rep(x_1,times=nrow(adj_in))
+    }
+    
   }
   print(paste0('Now processing time point ',time))
 
   # Calculate current values of y and x given posterior uncertainty
-  output <- data_frame(y=y_1 - gamma1*(y_1 - adj * x_1),
-                      x=x_1 - gamma2*(x_1 - (1/adj)*y_1),
-                      time=time,
-                      iter=1:length(gamma1))
+  # use different version if external covariates are included
+  if(is.null(beta_x)) {
+    output <- data_frame(y=intercepts[,1] + adj_in[,1]*y_1 + adj_out[,1]*x_1,
+                         x=intercepts[,2] + adj_in[,2]*x_1 + adj_out[,2]*y_1,
+                         time=time,
+                         iter=1:nrow(adj_in))
+  } else {
+    output <- data_frame(y=intercepts[,1] + adj_in[,1]*y_1 + adj_out[,1]*x_1 + beta_x[,1],
+                         x=intercepts[,2] + adj_in[,2]*x_1 + adj_out[,2]*y_1 + beta_x[,2],
+                         time=time,
+                         iter=1:nrow(adj_in))
+  }
+
   
   if(!is.null(old_output)) {
     new_output <- bind_rows(old_output,output)
@@ -102,9 +124,10 @@ irf <- function(time=1,shock=1,gamma1=NULL,
   if(time<total_t) {
     irf(time=time+1,
         shock=shock,
-        gamma1=gamma1,
-        gamma2=gamma2,
-        adj=adj,
+        intercepts=intercepts,
+        adj_in=adj_in,
+        adj_out=adj_out,
+        beta_x=beta_x,
         y_1=output$y,
         x_1=output$x,
         total_t=total_t,
@@ -115,23 +138,31 @@ irf <- function(time=1,shock=1,gamma1=NULL,
   
 }
 
-is_prec1 <- irf(gamma1=gamma11[,1],
-                gamma2=gamma12[,1],
-                     adj=adj[,1])
-is_post1 <- irf(gamma1=gamma11[,2],
-                gamma2=gamma12[,2],
-                      adj=adj[,1])
-se_prec1 <- irf(gamma1=gamma21[,1],
-                gamma2=gamma22[,1],
-                       adj=adj[,2])
-se_post1 <- irf(gamma1=gamma21[,2],
-                gamma2=gamma22[,2],
-                        adj=adj[,2])
+# set shock to 2 SD of the time series
+# shock is negative or positive depending on whether it would push them towards or 
+# away from the religionists in the same country
+islamists_eg <- irf(shock=-2*mean(sigma_time[,2]),
+                    intercepts = cbind(high_int,intercepts[,1]),
+                    adj_in=adj_in[,1:2],
+                    adj_out=adj_out[,1:2])
+islamists_tun <- irf(shock=2*mean(sigma_time[,1]),
+                    intercepts = cbind(intercepts[,1],high_int),
+                    adj_in=adj_in[,2:1],
+                    adj_out=adj_out[,2:1])
+secularist_eg  <- irf(shock=-2*mean(sigma_time[,4]),
+                      intercepts = intercepts[,2:3],
+                      adj_in=adj_in[,3:4],
+                      adj_out=adj_out[,3:4])
+secularist_tun  <- irf(shock=2*mean(sigma_time[,3]),
+                      intercepts = intercepts[,3:2],
+                      adj_in=adj_in[,4:3],
+                      adj_out=adj_out[,4:3])
 
-all_irfs1 <- bind_rows(list(`Islamists\nPre-Coup`=is_prec1,
-                      `Islamists\nPost-Coup`=is_post1,
-                      `Secularists\nPre-Coup`=se_prec1,
-                      `Secularists\nPost-Coup`=se_post1),
+
+all_irfs1 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
+                      `Islamists\nTunisia`=islamists_tun,
+                      `Secularists\nEgypt`=secularist_eg,
+                      `Secularists\nTunisia`=secularist_tun),
                       .id='Series') %>% 
   group_by(Series,iter) %>% 
   mutate(x_irf=x - lag(x,order_by=time),
@@ -148,7 +179,7 @@ all_irfs1 %>%
   ggplot(aes(y=y_irf,x=time))   +
   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
+  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('ChangeIdeological Positions') + 
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='')

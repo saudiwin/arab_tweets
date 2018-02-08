@@ -13,7 +13,7 @@ require(googledrive)
 require(lubridate)
 
 day_count <- 1
-sample_users <- T
+sample_users <- F
 
 # Load in revised codings
 
@@ -252,13 +252,13 @@ out_fit_id <- vb(code_compile,
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=distinct(times,time_three,coup) %>% slice(-n()) %>% pull(coup) ),
                     init=start_func)
-#saveRDS(out_fit_id,paste0('out_fit_id_std_gc',this_time,'.rds'))
-#drive_upload(paste0('out_fit_id_std_gc',this_time,'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_id_std_VAR',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_std_VAR',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
-mcmc_intervals(to_plot,regex_pars = 'sigma_time')
-mcmc_intervals(to_plot,regex_pars = c('adj'))
+# mcmc_intervals(to_plot,regex_pars = 'sigma_time')
+# mcmc_intervals(to_plot,regex_pars = c('adj'))
 
 get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]
@@ -298,10 +298,3 @@ deltas <- rstan::extract(out_fit_id,pars='delta_1',permuted=T)$delta
 betas <- rstan::extract(out_fit_id,pars='beta_0',permuted=T)$beta
 apply(deltas,2,mean) %>% hist
 apply(betas,2,mean) %>% hist
-#lookat <- summary(out_fit_id)
-#hist(lookat$summary[,'Rhat'])
-# 
-#non_identified_parameters <- lookat$summary[which(lookat$summary[,'Rhat']>1.1),]
-# mcmc_trace(to_plot,regex_pars='steps')
-# mcmc_trace(to_plot,pars='delta[7000]')
-# mcmc_trace(to_plot,pars='lp__')

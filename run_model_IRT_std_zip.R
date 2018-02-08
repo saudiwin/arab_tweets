@@ -14,20 +14,6 @@ require(lubridate)
 day_count <- 1
 sample_users <- T
 
-#Load in codings
-# elite_coding <- read_csv('data/Coding Comparison - Sheet1.csv') %>%
-#   mutate(final_code=coalesce(`Dana Coding`,
-#                              `Hana Coding`)) %>%
-#   separate(final_code,into=c('Religion','Regime'),sep='-') %>%
-#   mutate(country=c(rep('Tunisia',64),
-#                    rep('Egypt',n()-64)),
-#          coding=paste0(Religion,'_',country)) %>%
-#   filter(!is.na(Religion)) %>%
-#   mutate(coding_num=as.numeric(factor(coding)),
-#          Username=tolower(Username))
-
-# Load in revised codings
-
 elite_codings2 <- read_csv('data/check_complete.csv') %>% 
   mutate(coding=paste0(coding,'_',Country),
          coding_num=as.numeric(factor(coding)),
@@ -126,12 +112,6 @@ combined_data_small <- left_join(combined_data,
 # drop missing
 
 combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
-
-# drop the random six in the dataset
-
-
-# combined_data_small_nomis <- mutate(combined_data_small_nomis,
-#                                     nn=if_else(nn==6,4L,nn))
 
 
 # let's look at histograms of tweets
@@ -239,7 +219,7 @@ if(sample_users==T) {
   keep_users <- ungroup(lookat_cit_ratio) %>% 
     mutate(cit_ids=as.numeric(factor(rt_ids))) %>% 
     filter(prop_group<.9) %>% 
-    arrange(desc(n)) %>% slice(1:10000) %>% 
+    arrange(desc(n)) %>% slice(1:5000) %>% 
     select(cit_ids) %>% 
     distinct
   combined_zero <- inner_join(keep_users,combined_zero,by=c('cit_ids')) %>% 
