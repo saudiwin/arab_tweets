@@ -252,13 +252,13 @@ get_time %>%
   guides(linetype=F) +
   geom_path(data=orig_vals,aes(y=out_vals,x=time_pts,linetype=Series),size=1) +
   facet_wrap(~Series)
-<<<<<<< HEAD
+
 ggsave('true_estimated.png')
-=======
+
 
 ggsave('sim_values_real.png')
 
->>>>>>> 3d1e8e9f8fc6ffe56e4272de5cd74f2018d01d08
+
 est_alpha <- apply(rstan::extract(out_fit,pars='alpha',permute=T)$alpha,
                    c(2,3),
                    mean)

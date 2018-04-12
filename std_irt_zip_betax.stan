@@ -43,8 +43,8 @@ parameters {
 }
 
 model {
-  alpha[1,1] ~ normal(start_vals[1],.1);
-  alpha[1,2:4] ~ normal(0,1);
+  //alpha[1,] ~ normal(start_vals[1],.1);
+  alpha[1,] ~ normal(0,1);
 // delta_con_low ~ normal(0,3);
 // delta_con_high ~ normal(0,3);
   //gamma_par1 ~ normal(0,2);

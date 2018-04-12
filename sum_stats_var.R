@@ -72,6 +72,7 @@ adj_out <- rstan::extract(out_fit_id,pars='adj_out')$adj_out
 high_int <- rstan::extract(out_fit_id,pars='alpha_int_high')$alpha_int_high
 intercepts <- rstan::extract(out_fit_id,pars='alpha_int')$alpha_int
 sigma_time <- rstan::extract(out_fit_id,pars='sigma_time')$sigma_time
+beta_adj <- rstan::extract(out_fit_id,pars='betax')$sigma_time
 
 irf <- function(time=1,shock=1,
                 intercepts=NULL,
@@ -182,7 +183,8 @@ all_irfs1 %>%
   theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('ChangeIdeological Positions') + 
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Series,scales='free_y') +
-  scale_linetype(name='')
+  scale_linetype(name='') +
+  geom_hline(yintercept = 0,linetype=2)
 
 ggsave('irf_egypt_panels.png')
 

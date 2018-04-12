@@ -3,7 +3,6 @@ data {
   int<lower=1> K;              // number of citizens
   int<lower=1> N;              // number of observations
   int<lower=1> T;  //number of time points
-  int simul; // whether we are running a simulation and use generated quantities
   int id_num_high;
   int id_num_low;
   int<lower=1,upper=J> jj[N];  // elite for observation n
@@ -25,7 +24,7 @@ parameters {
   vector[4] adj_out;
   vector[3] alpha_int;
   vector[4] betax;
-  real<lower=0> country;
+  real country;
   vector<lower=0>[4] sigma_time;
   real<lower=0> sigma_beta_0;
   real<lower=0> sigma_overall;
@@ -46,7 +45,7 @@ model {
   alpha_int ~ normal(0,1);
   adj_in ~ normal(0,1);
   adj_out ~ normal(0,1);
-  country ~ exponential(.1);
+  country ~ normal(0,2);
   sigma_time ~ exponential(.1);
   sigma_overall ~ exponential(.1);
   sigma_beta_0 ~ exponential(.1);
