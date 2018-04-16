@@ -15,8 +15,8 @@ require(forcats)
 # 
 # mcmc_intervals(to_plot,regex_pars='gamma')
 
-get_time_raw <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
-get_time <- get_time_raw[sample(1:nrow(get_time_raw),101),,]
+get_time <- rstan::extract(out_fit_id,pars='alpha_country',permute=T)$alpha
+
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
   bind_rows(.id='Series') %>% 

@@ -4,7 +4,6 @@ require(dplyr)
 require(tidyr)
 require(RSQLite)
 require(rstan)
-
 require(bayesplot)
 require(ggplot2)
 require(readr)
@@ -12,33 +11,21 @@ require(forcats)
 require(googledrive)
 require(lubridate)
 
+# time to aggregate twitter dates to
+
 day_count <- 1
+
+# whether to run a sample for testing purposes
 sample_users <- F
 
 # Load in revised codings
+# remove jasmine foundation because it is a-political
 
-elite_codings2 <- read_csv('data/check_complete.csv') %>% 
+elite_codings <- read_csv('data/check_complete.csv') %>% 
   mutate(coding=paste0(coding,'_',Country),
          coding_num=as.numeric(factor(coding)),
          Username=tolower(Username)) %>% 
   filter(person=='dana') %>% 
-  mutate(coding_num=case_when((coding_num==2 & Username %in% c('r_ghannouchi',
-                                                              'nahdhatunisie',
-                                                              'ali_larayedh',
-                                                              'yusraghkh',
-                                                              'ziedladhari',
-                                                              'yassayari',
-                                                              'khamousss')) ~ 2,
-                              (coding_num==2 & !(Username %in% c('r_ghannouchi',
-                                                               'nahdhatunisie',
-                                                               'ali_larayedh',
-                                                               'yusraghkh',
-                                                               'ziedladhari',
-                                                               'yassayari',
-                                                               'khamousss')))~4,
-         coding_num==1~1,
-         coding_num==3~3,
-         coding_num==4~4)) %>% 
   filter(Username!="jasminef_tn")
 
 #SQLite databases
@@ -48,7 +35,7 @@ all_egypt <- dbConnect(SQLite(),'data/egypt_tweets_small.sqlite')
 tunis_rts <- dbReadTable(all_tunis,'unique_rts')
 egypt_rts <- dbReadTable(all_egypt,'unique_rts')
 
-# get rid of all SNs who RT less than 3 different people
+# get rid of all twitter users who RT less than 3 different people
 
 filter_tunis <- group_by(tunis_rts,rt_ids,username) %>% count %>% group_by(rt_ids) %>% count() %>% filter(n>2)
 
@@ -82,7 +69,7 @@ combined_data <- bind_rows(filter(egypt_rts,rt_ids %in% filter_egypt$rt_ids),
                            filter(tunis_rts,rt_ids %in% filter_tunis$rt_ids)) %>% 
   mutate(username=tolower(username))
 
-# need to make the coup indicator & change time to three day intervals
+# need to make the coup indicator & change time to one day intervals
 coup_day <- lubridate::yday('2013-07-03')
 old_days <- min(combined_data$time):max(combined_data$time)
 seq_val <- floor(length(old_days)/day_count)
@@ -106,7 +93,7 @@ combined_data <- left_join(combined_data,
 times <- distinct(times,time_three,time, coup)
 
 combined_data_small <- left_join(combined_data,
-                                 elite_codings2,
+                                 elite_codings,
                                  by=c('username'='Username')) %>% 
                                    group_by(time_three,
                                 coding_num,
@@ -115,13 +102,6 @@ combined_data_small <- left_join(combined_data,
 # drop missing
 
 combined_data_small_nomis <- filter(combined_data_small,!is.na(coding_num))
-
-# drop the random six in the dataset
-
-
-# combined_data_small_nomis <- mutate(combined_data_small_nomis,
-#                                     nn=if_else(nn==6,4L,nn))
-
 
 # let's look at histograms of tweets
 
@@ -160,18 +140,24 @@ lookat_cit_top <- lookat_cit_ratio %>%
 lookat_cit_patriot <- lookat_cit_ratio %>% 
   filter(prop_group==1)
 
-#combined_data_small_nomis <- anti_join(combined_data_small_nomis,lookat_cit_patriot,by='rt_ids') %>% 
+# create IDs for Stan
 combined_data_small_nomis  <- ungroup(combined_data_small_nomis) %>% 
   mutate(cit_ids=as.numeric(factor(rt_ids))) 
+
 #use -9999 as the placeholder for values that are unobserved
+
 combined_zero <- select(combined_data_small_nomis,time_three,coding_num,coup,nn,cit_ids) %>% 
                         complete(cit_ids,coding_num,time_three,fill=list(nn=-9999)) %>% 
   mutate(coup=if_else(time_three>coup_day_new,2L,1L))
-#test complete
 
-test_d <- data_frame(rt_ids=c(1,1,1,2,2,3,4),
-                     coding_num=c(1,2,3,3,4,2,1),
-                     nn=c(3,2,5,6,3,1,5))
+# #test complete
+# 
+# test_d <- data_frame(rt_ids=c(1,1,1,2,2,3,4),
+#                      coding_num=c(1,2,3,3,4,2,1),
+#                      nn=c(3,2,5,6,3,1,5))
+
+# we're going to scale the outcome so that it is standard normal
+
 zero_scale <- function(col_vec) {
   if(all(col_vec==-9999)) {
     return(col_vec)
@@ -219,7 +205,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='std_irt_zip_var.stan')
+code_compile <- stan_model(file='std_irt_zip_var_betax.stan')
 
 this_time <- Sys.time()
 
@@ -236,29 +222,26 @@ if(sample_users==T) {
     mutate(cit_ids=as.numeric(factor(cit_ids)))
 }
 
-out_fit_id <- vb(code_compile,
+out_fit_id <- sampling(code_compile,
                     data=list(J=max(combined_zero$coding_num),
                               K=max(combined_zero$cit_ids),
                               `T`=max(combined_zero$time_three),
                               N=nrow(combined_zero),
-                              id_num_high=1,
-                              id_num_low=1,
                               jj=combined_zero$coding_num,
                               kk=combined_zero$cit_ids,
                               tt=combined_zero$time_three,
                               y=combined_zero$scaled_nn,
                               country_code=if_else(combined_zero$coding_num %in% c(2,4),1L,0L),
-                              coup=as.integer(floor(max(combined_zero$time_three)/2)),
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=distinct(times,time_three,coup) %>% slice(-n()) %>% pull(coup) ),
-                    init=start_func)
-saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax',this_time,'.rds'))
-drive_upload(paste0('out_fit_id_std_VAR_betax',this_time,'.rds'))
+                    init=start_func,
+                    cores=4,chains=4,iter=1000)
+
+# save and upload to google drive
+saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax_full_',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_std_VAR_betax_full_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
-
-# mcmc_intervals(to_plot,regex_pars = 'sigma_time')
-# mcmc_intervals(to_plot,regex_pars = c('adj'))
 
 get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 get_time <- get_time[sample(1:nrow(get_time),101),,]

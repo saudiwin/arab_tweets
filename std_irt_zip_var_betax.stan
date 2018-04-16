@@ -3,42 +3,32 @@ data {
   int<lower=1> K;              // number of citizens
   int<lower=1> N;              // number of observations
   int<lower=1> T;  //number of time points
-  int simul; // whether we are running a simulation and use generated quantities
-  int id_num_high;
-  int id_num_low;
-  int<lower=1,upper=J> jj[N];  // elite for observation n
-  int<lower=1,upper=K> kk[N];  // student for observation n
+  int<lower=1,upper=J> jj[N];  // elite ID for observation n
+  int<lower=1,upper=K> kk[N];  // citizen ID for observation n
   int<lower=1> tt[N]; // t for observation N
   real y[N];   // outcome for observation n
-  vector[4] start_vals;
-  int coup; // when the coup happens
-  vector[T-1] time_gamma;
+  vector[T-1] time_gamma; //binary vector indicating when coup happens
   int country_code[N]; //indicator for Tunisia
 }
 parameters {    
   vector[K] delta_1;                  // non-zero discriminations
   vector[K] delta_0;                  // zero discriminations
-  matrix[T,J] alpha;               // ability of student j - mean ability
-  //vector[K] beta_1;                // non-zero difficulty of question k
+  matrix[T,J] alpha;               // time-varying ideal points for elites
   vector[K] beta_0;                // zero difficulty of question k
-  vector[4] adj_in;
-  vector[4] adj_out;
-  vector[3] alpha_int;
-  vector[4] betax;
-  real<lower=0> country;
-  vector<lower=0>[4] sigma_time;
-  real<lower=0> sigma_beta_0;
-  real<lower=0> sigma_overall;
+  vector[4] adj_in;  //adjustment parameters
+  vector[4] adj_out; //adjustment parameters
+  vector[3] alpha_int; //drift
+  vector[4] betax; //effects of coup
+  real<lower=0> country; //dummy for country-level fixed effects
+  vector<lower=0>[4] sigma_time; //heteroskedastic variance by ideological group
+  real<lower=0> sigma_beta_0; //hierarchical variance for zero betas
+  real<lower=0> sigma_overall; //variance for top-level normal distribution
 }
 
 transformed parameters {
+  //constrain one intercept for identification 
   vector[4] alpha_int_full;
-  
   alpha_int_full = append_row(alpha_int,-sum(alpha_int));
-  // 
-  // beta = append_row(-sum(beta_free),beta_free);
-  // vector[K] delta;
-  // delta=append_row(delta_con_high,append_row(delta_con_low,delta_free));
 }
 
 model {
@@ -57,7 +47,7 @@ model {
                         adj_out[1]*alpha[1:(T-1),2] +
                         betax[1]*time_gamma,
                 sigma_time[1]);
-  //constrain one intercept to zero for identification
+
   alpha[2:T,2] ~ normal(alpha_int_full[2] + adj_in[2]*alpha[1:(T-1),2] + 
                         adj_out[2]*alpha[1:(T-1),1] +
                         betax[2]*time_gamma,
@@ -66,7 +56,7 @@ model {
                         adj_out[3]*alpha[1:(T-1),4] +
                         betax[3]*time_gamma,
                 sigma_time[3]);
-  //constrain one intercept to zero for identification
+
   alpha[2:T,4] ~ normal(alpha_int_full[4] + adj_in[4]*alpha[1:(T-1),4] + 
                         adj_out[4]*alpha[1:(T-1),3] +
                         betax[4]*time_gamma,
@@ -76,18 +66,21 @@ model {
   beta_0 ~ normal(0,sigma_beta_0);
   delta_1 ~ normal(0,5);   
   delta_0 ~ normal(0,5);
+  // loop over outcome
+  // use hurdle model for missing data (-9999)
+  // conditional on passing hurdle, use normal distribution IRT model with time-varying
+  // parameters for elites
+  
     for(n in 1:N) {
       if(y[n]==-9999) {
         1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] +
                              delta_0[kk[n]]*country*country_code[n] - 
-                            // delta_0[kk[n]]*alpha_int[jj[n]] - 
                             beta_0[kk[n]]);
       } else {
         0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]] +
                            delta_0[kk[n]]*country*country_code[n]); 
         y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n],jj[n]] +
                        delta_1[kk[n]]*country*country_code[n], 
-                      // delta_1[kk[n]]*alpha_int[jj[n]],
                       sigma_overall);
       }
     }
