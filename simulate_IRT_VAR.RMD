@@ -71,8 +71,8 @@ betax <- rnorm(sides)
 alpha_int <- rnorm(sides)
 # to generate adjustment parameters, we draw from the unit circle
 unit_pts <- pracma::randp(n=sides)
-adj_in <- unit_pts[,1]
-adj_out <- unit_pts[,2]
+adj_in <- c(-0.3,0.5,.7,-.2)
+adj_out <- c(0.4,-.3,.15,-.5)
 alpha <- rnorm(sides)
 sigma <- rexp(sides,rate=2)+.1
 country <- max(sigma)*2
@@ -282,19 +282,6 @@ to_join <- as_data_frame(combine_vec) %>%
                                                       'Tunisia Secularists',
                                                       'Egypt Secularists')))
 
-# need to rescale by citizens
-
-# cit_pts <- as.data.frame(out_fit,pars='delta_1') %>% 
-#   mutate(iter=1:n()) %>% 
-#   gather(key='param',value='estimate',-iter) %>% 
-#   group_by(param) %>% 
-#   summarize(high_est=quantile(estimate,.1),
-#             low_est=quantile(estimate,.9),
-#             med_est=quantile(estimate,0.5))
-
-# + mean(true_estimate) -
-#                             (sd(true_estimate)/sd(med_est)*mean(med_est))
-
 to_plot <- left_join(ideal_pts,
                      to_join,
                      by=c('ideal_pt',
@@ -340,7 +327,80 @@ model_out <- vars::VAR(to_ts,p=1,type='const',exogen=betax_m)
 coefs <- coef(model_out)
 est_betax <- sapply(coefs,function(x) x['betax',1])
 est_alpha_int <- sapply(coefs,function(x) x['const',1])
-# look at IRFs
-plot(irf(model_out))
+
 ``` 
+
+Now we can calculate impulse-response functions (IRFs) and compare those to the "true" IRFs I estimated using the `vars` package. We calculate the IRF of each time series on every other time series pre-coup and post-coup. 
+
+```{r calc_irfs}
+
+ints_est <- as.matrix(out_fit,pars='alpha_int_full')
+betax_est <- as.matrix(out_fit,pars='betax')
+adj_out_est <- as.matrix(out_fit,pars='adj_out')
+adj_in_est <- as.matrix(out_fit,pars='adj_in')
+country_est <- as.matrix(out_fit,pars='country')
+
+
+
+all_irfs1 <- bind_rows(list(`Islamists\nEgypt`=irf(adj_in=adj_in_est[,1:2],
+                                             adj_out=adj_out_est[,1:2]),
+                      `Islamists\nTunisia`=irf(adj_in=adj_in_est[,c(2,1)],
+                                             adj_out=adj_out_est[,c(2,1)]),
+                      `Secularists\nEgypt`=irf(adj_in=adj_in_est[,3:4],
+                                             adj_out=adj_out_est[,3:4]),
+                      `Secularists\nTunisia`=irf(adj_in=adj_in_est[,c(4,3)],
+                                             adj_out=adj_out_est[,c(4,3)])),
+                      .id='Series') %>% 
+  group_by(Series,time) %>% 
+  summarize(median_est=median(y_irf),
+            upper=quantile(y_irf,.95),
+            lower=quantile(y_irf,.05)) %>% 
+  mutate(type='Estimated')
+
+
+# Now let's make "real" IRFS
+
+egypt_isl_true <- vars::irf(model_out,impulse='t_12',response='t_11',ortho=F,runs=500)
+tunisia_isl_true <- vars::irf(model_out,impulse='t_11',response='t_12',ortho=F,runs=500)
+egypt_sec_true <- vars::irf(model_out,impulse='t_121',response='t_111',ortho=F,runs=500)
+tunisia_sec_true <- vars::irf(model_out,impulse='t_111',response='t_121',ortho=F,runs=500)
+
+all_irfs2 <- bind_rows(list(`Islamists\nEgypt`=data_frame(median_est=egypt_isl_true$irf$t_12[-1,1],
+                                                          upper=egypt_isl_true$Upper$t_12[-1,1],
+                                                          lower=egypt_isl_true$Lower$t_12[-1,1],
+                                                          time=1:10),
+                      `Islamists\nTunisia`=data_frame(median_est=tunisia_isl_true$irf$t_11[-1,1],
+                                                          upper=tunisia_isl_true$Upper$t_11[-1,1],
+                                                          lower=tunisia_isl_true$Lower$t_11[-1,1],
+                                                          time=1:10),
+                      `Secularists\nEgypt`=data_frame(median_est=egypt_sec_true$irf$t_121[-1,1],
+                                                          upper=egypt_sec_true$Upper$t_121[-1,1],
+                                                          lower=egypt_sec_true$Lower$t_121[-1,1],
+                                                          time=1:10),
+                      `Secularists\nTunisia`=data_frame(median_est=tunisia_sec_true$irf$t_111[-1,1],
+                                                          upper=tunisia_sec_true$Upper$t_111[-1,1],
+                                                          lower=tunisia_sec_true$Lower$t_111[-1,1],
+                                                          time=1:10)),
+                      .id='Series') %>% 
+  mutate(type='True')
+
+combine_irf <- bind_rows(all_irfs1,all_irfs2)
+
+combine_irf %>% 
+  ggplot(aes(y=median_est,x=time))   +
+  geom_ribbon(aes(ymin=lower,ymax=upper,fill=type),alpha=0.4) +
+  geom_line(aes(linetype=type,colour=type),size=.9) +
+  theme(panel.grid=element_blank(),
+        panel.background = element_blank()) + xlab('Days Since Shock') + 
+  ylab('ChangeIdeological Positions') + 
+  scale_fill_brewer(palette='Paired',name='') + 
+  scale_colour_brewer(type = 'div',name='') +
+  facet_wrap(~Series,scales='free_y') +
+  scale_linetype(name='') +
+  geom_hline(yintercept = 0,linetype=2)
+
+ggsave('irf_simulation_panels.png')
+
+
+```
 

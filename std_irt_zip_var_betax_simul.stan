@@ -24,7 +24,7 @@ parameters {
   vector[4] adj_out;
   vector[3] alpha_int;
   vector[4] betax;
-  real country;
+  real<lower=0> country;
   vector<lower=0>[4] sigma_time;
   real<lower=0> sigma_beta_0;
   real<lower=0> sigma_overall;
@@ -45,7 +45,7 @@ model {
   alpha_int ~ normal(0,1);
   adj_in ~ normal(0,1);
   adj_out ~ normal(0,1);
-  country ~ normal(0,2);
+  country ~ exponential(.1);
   sigma_time ~ exponential(.1);
   sigma_overall ~ exponential(.1);
   sigma_beta_0 ~ exponential(.1);
