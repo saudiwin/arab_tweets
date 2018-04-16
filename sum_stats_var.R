@@ -1,4 +1,4 @@
-# Run Summary Stats on integration model
+# Run Summary Stats on fitted Bayesian VAR IRT model
 
 require(dplyr)
 require(ggplot2)
@@ -9,13 +9,17 @@ require(tidyr)
 require(bayesplot)
 require(purrr)
 require(forcats)
-#out_fit_id <- readRDS('data/out_fit_id_2017-08-28 16-53-46.rds')
 
-# to_plot <- as.array(out_fit_id)
-# 
-# mcmc_intervals(to_plot,regex_pars='gamma')
+# load fitted rstan model
 
-get_time <- rstan::extract(out_fit_id,pars='alpha_country',permute=T)$alpha
+out_fit_id <- readRDS('out_fit_id_std_VAR_betax2018-04-16 08_55_23.rds')
+
+# load times data and check for the coup day
+times <- readRDS('times.rds')
+coup_day_new <- unique(times$coup_day)-min(times$time)
+
+# currently using elite ideal points with country fixed effects included
+get_time <- rstan::extract(out_fit_id,pars='alpha_country',permute=T)$alpha_country
 
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 

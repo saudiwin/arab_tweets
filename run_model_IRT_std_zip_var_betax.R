@@ -80,13 +80,16 @@ if(length(new_days)<length(old_days)) {
 if(day_count>1) {
   coup_day_new <- new_days[which(old_days>coup_day & (old_days %% day_count))[1]]
 } else {
-  coup_day_new <- new_days[which(old_days>coup_day)][[1]]
+  coup_day_new <- new_days[old_days==coup_day]
 }
 
-
+# create a datset of times and save it
 times <- data_frame(time=old_days,time_three=new_days,
                     coup=if_else(time_three>coup_day_new,2L,1L),
-                    coup_day=coup_day)
+                    coup_day=coup_day) %>% 
+  mutate(time_date=as.Date(time,origin='2012-12-31'))
+saveRDS(times,'times.rds')
+
 combined_data <- left_join(combined_data,
                            times)
 
@@ -222,7 +225,7 @@ if(sample_users==T) {
     mutate(cit_ids=as.numeric(factor(cit_ids)))
 }
 
-out_fit_id <- sampling(code_compile,
+out_fit_id <- vb(code_compile,
                     data=list(J=max(combined_zero$coding_num),
                               K=max(combined_zero$cit_ids),
                               `T`=max(combined_zero$time_three),
@@ -234,12 +237,11 @@ out_fit_id <- sampling(code_compile,
                               country_code=if_else(combined_zero$coding_num %in% c(2,4),1L,0L),
                               start_vals=c(-.5,-.5,.5,.5),
                               time_gamma=distinct(times,time_three,coup) %>% slice(-n()) %>% pull(coup) ),
-                    init=start_func,
-                    cores=4,chains=4,iter=1000)
+                    init=start_func,output_samples=100)
 
 # save and upload to google drive
-saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax_full_',this_time,'.rds'))
-drive_upload(paste0('out_fit_id_std_VAR_betax_full_',this_time,'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax_',this_time,'.rds'))
+drive_upload(paste0('out_fit_id_std_VAR_betax_',this_time,'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
