@@ -5,10 +5,10 @@ data {
   int<lower=1> T;  //number of time points
   int<lower=1,upper=J> jj[N];  // elite ID for observation n
   int<lower=1,upper=K> kk[N];  // citizen ID for observation n
-  int<lower=1> tt[N]; // t for observation N
+  int<lower=1> tt[N]; // t for observation N 
   real y[N];   // outcome for observation n
   vector[T-1] time_gamma; //binary vector indicating when coup happens
-  int country_code[N]; //indicator for Tunisia
+  int country_code[N]; // indicator for Tunisia
 }
 parameters {    
   vector[K] delta_1;                  // non-zero discriminations

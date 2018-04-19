@@ -133,7 +133,9 @@ combine_plot <- combine_vec %>% as_data_frame %>%
                            `Egypt Islamists`='t_12',
                            `Tunisia Secularists`='t_111',
                            `Egypt Secularists`='t_121'))
-  combine_plot %>% ggplot(aes(y=estimates,x=time,linetype=series,colour=series)) +geom_path(size=1) +theme_minimal() +
+  combine_plot %>% ggplot(aes(y=estimates,x=time,linetype=series,colour=series)) +
+    geom_path(size=1) +
+    theme_minimal() +
   geom_vline(xintercept=(t/2),linetype=4) +
   scale_colour_brewer(palette='Paired',name='') +
     scale_linetype(name='') +

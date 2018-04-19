@@ -36,40 +36,31 @@ gen_ts_data <- function(t,adj_in,adj_out,this_beta,alpha_int,sigma,init_sides,co
 # generate IRFs
 
 irf <- function(time=1,shock=1,
-                intercepts=matrix(c(0,0),ncol=2),
                 adj_in=NULL,
                 adj_out=NULL,
-                beta_x = matrix(c(0,0),ncol=2),
-                country=matrix(c(0,0),ncol=2),
                 y_1=0,
                 x_1=0,
-                y_2=0,
-                x_2=0,
+                xshock=TRUE,
                 total_t=10,
                 old_output=NULL) {
   
   # set up the exogenous shock
   # unless the shock comes from an exogenous covariate beta_x
   if(time==1) {
-    x_1 <- shock 
+    if(xshock) {
+      x_1 <- shock
+    } else {
+      y_1 <- shock
+    }
+     
   }
   
-  if(time==1) {
-    y_1 <- rep(y_1,times=nrow(adj_in))
-    if(length(x_1)==1) {
-      x_1 <- rep(x_1,times=nrow(adj_in))
-    }
-    y_2 <- rep(y_2,times=nrow(adj_in))
-    x_2 <- rep(x_2,times=nrow(adj_in))
-  }
   print(paste0('Now processing time point ',time))
   
   # Calculate current values of y and x given posterior uncertainty
 
-    output <- data_frame(y_shock=intercepts[,1] + adj_in[,1]*y_1 + adj_out[,1]*x_1 + beta_x[,1] + country[,1],
-                         x_shock=intercepts[,2] + adj_in[,2]*x_1 + adj_out[,2]*y_1 + beta_x[,2] + country[,2],
-                         y_noshock=intercepts[,1] + adj_in[,1]*y_2 + adj_out[,1]*x_2 + beta_x[,1] + country[,1],
-                         x_noshock=intercepts[,2] + adj_in[,2]*y_2 + adj_out[,2]*x_2 + beta_x[,2] + country[,2],
+    output <- data_frame(y_shock= adj_in[,1]*y_1 + adj_out[,1]*x_1,
+                         x_shock=adj_in[,2]*x_1 + adj_out[,2]*y_1,
                          time=time,
                          iter=1:nrow(adj_in))
   
@@ -85,18 +76,63 @@ irf <- function(time=1,shock=1,
   if(time<total_t) {
     irf(time=time+1,
         shock=shock,
-        intercepts=intercepts,
         adj_in=adj_in,
         adj_out=adj_out,
-        beta_x=beta_x,
         y_1=output$y_shock,
         x_1=output$x_shock,
-        y_2=output$y_noshock,
-        x_2=output$x_noshock,
         total_t=total_t,
         old_output=new_output)
   } else {
-    return(mutate(new_output,y_irf=y_shock-y_noshock))  
+    return(new_output)  
+  }
+  
+}
+
+irf_2shock <- function(time=1,shock=cbind(1,1),
+                adj_in=NULL,
+                adj_out=NULL,
+                y_1=0,
+                x_1=0,
+                xshock=TRUE,
+                total_t=10,
+                old_output=NULL) {
+  
+  # set up the exogenous shock
+  # unless the shock comes from an exogenous covariate beta_x
+  if(time==1) {
+      x_1 <- shock[,2]
+      y_1 <- shock[,1]
+  }
+  
+  print(paste0('Now processing time point ',time))
+  
+  # Calculate current values of y and x given posterior uncertainty
+  
+  output <- data_frame(y_shock= adj_in[,1]*y_1 + adj_out[,1]*x_1,
+                       x_shock=adj_in[,2]*x_1 + adj_out[,2]*y_1,
+                       time=time,
+                       iter=1:nrow(adj_in))
+  
+  
+  if(!is.null(old_output)) {
+    new_output <- bind_rows(old_output,output)
+  } else {
+    new_output <- output
+  }
+  
+  # run function recursively until time limit is reached
+  
+  if(time<total_t) {
+    irf(time=time+1,
+        shock=shock,
+        adj_in=adj_in,
+        adj_out=adj_out,
+        y_1=output$y_shock,
+        x_1=output$x_shock,
+        total_t=total_t,
+        old_output=new_output)
+  } else {
+    return(new_output)  
   }
   
 }

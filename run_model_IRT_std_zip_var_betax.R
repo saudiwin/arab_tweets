@@ -240,8 +240,8 @@ out_fit_id <- vb(code_compile,
                     init=start_func,output_samples=100)
 
 # save and upload to google drive
-saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax_',this_time,'.rds'))
-drive_upload(paste0('out_fit_id_std_VAR_betax_',this_time,'.rds'))
+saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax_',as.Date(this_time),'.rds'))
+drive_upload(paste0('out_fit_id_std_VAR_betax_',as.Date(this_time),'.rds'))
 
 to_plot <- as.array(out_fit_id)
 
@@ -260,14 +260,6 @@ get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>%
 
 get_time %>% 
   ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_smooth() + theme_minimal() +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='')
-
-get_time %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
   stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
   theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
@@ -276,10 +268,3 @@ get_time %>%
   scale_linetype(name='') + 
   geom_vline(aes(xintercept=coup_day_new),linetype=3)
 
-ggsave('arab_ideology.png')
-
-
-deltas <- rstan::extract(out_fit_id,pars='delta_1',permuted=T)$delta
-betas <- rstan::extract(out_fit_id,pars='beta_0',permuted=T)$beta
-apply(deltas,2,mean) %>% hist
-apply(betas,2,mean) %>% hist
