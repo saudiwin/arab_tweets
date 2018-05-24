@@ -6,6 +6,5 @@ tweets
 *.httr-oauth
 *.sqlite
 *.rds
-*.png
 *.pdf
 *.html
