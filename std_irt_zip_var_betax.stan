@@ -71,16 +71,21 @@ model {
   // conditional on passing hurdle, use normal distribution IRT model with time-varying
   // parameters for elites
   
+  // +
+  //                         delta_0[kk[n]]*country*country_code[n]
+  // +
+  //                           delta_0[kk[n]]*country*country_code[n]
+  // +
+  //                     delta_1[kk[n]]*country*country_code[n]
+  
+  
     for(n in 1:N) {
       if(y[n]==-9999) {
-        1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] +
-                             delta_0[kk[n]]*country*country_code[n] - 
+        1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]]  - 
                             beta_0[kk[n]]);
       } else {
-        0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]] +
-                           delta_0[kk[n]]*country*country_code[n]); 
-        y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n],jj[n]] +
-                       delta_1[kk[n]]*country*country_code[n], 
+        0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]]); 
+        y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n],jj[n]], 
                       sigma_overall);
       }
     }

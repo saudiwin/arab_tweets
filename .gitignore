@@ -7,3 +7,5 @@ tweets
 *.sqlite
 *.rds
 *.png
+*.pdf
+*.html

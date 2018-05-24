@@ -45,7 +45,7 @@ get_time %>%
   stat_summary(geom='ribbon',fun.data = 'median_hilow',aes(fill=Series),
                alpha=0.5) + theme_minimal() +
   stat_summary(fun.y='median',geom='path',aes(linetype=Series),alpha=0.5) +
-  theme(panel.grid=element_blank()) + xlab('') + ylab('Inter-Group Similarity') + 
+  theme(panel.grid=element_blank()) + xlab('') + ylab('Inter-Group Distance') + 
   scale_fill_brewer(palette='RdBu',name='') + 
   scale_linetype(name='') + 
   geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
@@ -64,7 +64,7 @@ get_time %>%
   ggplot(aes(y=out_vals,x=time_date)) +
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Country)) + theme_minimal() +
   facet_wrap(~Religion,ncol=1,scales='free_y') +
-  theme(panel.grid=element_blank()) + xlab('')  + ylab('Inter-Group Similarity') + 
+  theme(panel.grid=element_blank()) + xlab('')  + ylab('Inter-Group Distance') + 
   geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-05-01','2013-07-03','2013-08-14'))) 
 ggsave('religion_coint.png')
@@ -74,7 +74,7 @@ get_time %>%
   ggplot(aes(y=out_vals,x=time_date)) +
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Religion)) + theme_minimal() +
   facet_wrap(~Country,ncol=1,scales='free_y') +
-  theme(panel.grid=element_blank()) + xlab('')  + ylab('Inter-Group Similarity') + 
+  theme(panel.grid=element_blank()) + xlab('')  + ylab('Inter-Group Distance') + 
   geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-05-01','2013-07-03','2013-08-14'))) 
 ggsave('country_coint.png')
@@ -114,7 +114,7 @@ all_irfs1 %>%
   ggplot(aes(y=y_shock,x=time))   +
   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('ChangeIdeological Positions') + 
+  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('Change in Inter-Group Distance') + 
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='') +
@@ -154,18 +154,18 @@ secularist_tun  <- irf(shock=beta_adj[,4],
                        adj_out=adj_out[,4:3])
 
 
-all_irfs1 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
+all_irfs2 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
                             `Islamists\nTunisia`=islamists_tun,
                             `Secularists\nEgypt`=secularist_eg,
                             `Secularists\nTunisia`=secularist_tun),
                        .id='Series')
 
 
-all_irfs1 %>% 
+all_irfs2 %>% 
   ggplot(aes(y=y_shock,x=time))   +
   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('ChangeIdeological Positions') + 
+  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('Change in Inter-Group Distance') + 
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='') +
@@ -189,18 +189,18 @@ secularist_tun  <- irf(shock=beta_adj[,3],
                        adj_out=adj_out[,4:3])
 
 
-all_irfs1 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
+all_irfs3 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
                             `Islamists\nTunisia`=islamists_tun,
                             `Secularists\nEgypt`=secularist_eg,
                             `Secularists\nTunisia`=secularist_tun),
                        .id='Series')
 
 
-all_irfs1 %>% 
+all_irfs3 %>% 
   ggplot(aes(y=y_shock,x=time))   +
   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('ChangeIdeological Positions') + 
+  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('Change in Inter-Group Distance') + 
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='') +
@@ -224,24 +224,41 @@ secularist_tun  <- irf_2shock(shock=beta_adj[,4:3],
                        adj_out=adj_out[,4:3])
 
 
-all_irfs1 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
+all_irfs4 <- bind_rows(list(`Islamists\nEgypt`=islamists_eg,
                             `Islamists\nTunisia`=islamists_tun,
                             `Secularists\nEgypt`=secularist_eg,
                             `Secularists\nTunisia`=secularist_tun),
                        .id='Series')
 
 
-all_irfs1 %>% 
+all_irfs4 %>% 
   ggplot(aes(y=y_shock,x=time))   +
   stat_summary(geom='ribbon',fun.data = hdr,fill='grey80') + theme_minimal() +
   stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('ChangeIdeological Positions') + 
+  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('Change in Inter-Group Distance') + 
   scale_colour_brewer(palette='paired',name='') + 
   facet_wrap(~Series,scales='free_y') +
   scale_linetype(name='') +
   geom_hline(yintercept = 0,linetype=2)
 
 ggsave('irf_betax_both.png')
+
+# compare combined versus direct effect
+
+bind_rows(list(Combined=all_irfs4,
+          Direct=all_irfs2),.id='Type') %>% 
+  ggplot(aes(y=y_shock,x=time))   +
+  stat_summary(geom='ribbon',fun.data = hdr,aes(fill=Type),
+               alpha=0.5) + theme_minimal() +
+  stat_summary(fun.y='median',geom='path',aes(linetype=Type),size=1) +
+  scale_fill_brewer(name='',palette='Paired') + 
+  theme(panel.grid=element_blank()) + xlab('Days Since Shock') + ylab('Change in Inter-Group Distance') + 
+  scale_colour_brewer(palette='RdYlBu',name='') + 
+  facet_wrap(~Series,scales='free_y') +
+  scale_linetype(name='') +
+  geom_hline(yintercept = 0,linetype=2)
+
+ggsave('irf_betax_compare.png')
 
 # now plot some of the raw parameters
 
@@ -263,7 +280,7 @@ beta_pars %>%
   geom_density_ridges2(aes(y=parameter,fill=parameter,height=density),colour=NA,
                                stat='identity') +
   theme_ridges() +
-  scale_fill_brewer(palette='Paired',name=expression(paste("Posterior Density of ",beta[x]))) + 
+  scale_fill_brewer(palette='Paired',name=expression(paste("Posterior Density of ",beta[cgx]))) + 
   scale_y_discrete(expand=c(0.01, 0)) +
   scale_x_continuous(expand=c(0.01, 0)) +
   geom_vline(xintercept = 0,linetype=2) +
@@ -281,24 +298,6 @@ adj_in_pars <- mcmc_dens_chains_data(to_plot,regex_pars='adj_in') %>%
                                    'Egyptian Secularists',
                                    'Tunisian Secularists')))
 
-adj_in_pars %>% 
-  ggplot(aes(x=x)) +
-  geom_density(aes(fill=parameter),colour=NA,alpha=0.5)
-
-adj_in_pars %>% 
-  ggplot(aes(x=x)) +
-  geom_density_ridges2(aes(y=parameter,fill=parameter,height=scaled_density),colour=NA,
-                       stat='identity',scale=1.5) +
-  theme_ridges() +
-  scale_fill_brewer(palette='Paired',name=expression(paste("Posterior Density of ",alpha[ig(t-1)]))) + 
-  scale_y_discrete(expand=c(0.01, 0)) +
-  scale_x_continuous(expand=c(0.01, 0)) +
-  geom_vline(xintercept = 0,linetype=2) +
-  ylab('Ideological Groups') +
-  xlab(expression(alpha[ig(t-1)]))
-
-ggsave('adj_in.png')
-
 adj_out_pars <- mcmc_dens_chains_data(to_plot,regex_pars='adj_out') %>% 
   mutate(parameter=factor(parameter,
                           levels=c('adj_out[1]','adj_out[2]',
@@ -308,19 +307,23 @@ adj_out_pars <- mcmc_dens_chains_data(to_plot,regex_pars='adj_out') %>%
                                    'Egyptian Secularists',
                                    'Tunisian Secularists')))
 
-adj_out_pars %>% 
+bind_rows(list(`beta[cgIN]`=adj_in_pars,
+               `beta[cgOUT]`=adj_out_pars),.id='type') %>% 
   ggplot(aes(x=x)) +
-  geom_density_ridges2(aes(y=parameter,fill=parameter,height=scaled_density),colour=NA,
-                       stat='identity',scale=1.5) +
+  geom_density_ridges2(aes(y=parameter,fill=type,height=scaled_density),colour=NA,
+                       stat='identity',scale=.5) +
   theme_ridges() +
-  scale_fill_brewer(palette='Paired',name=expression(paste("Posterior Density of ",alpha[-ig(t-1)]))) + 
+  scale_fill_brewer(palette='Paired',name="HPD of Parameter",
+                    labels=c(expression(beta[cgIN]),
+                             expression(beta[cgOUT])),
+                    guide=guide_legend(label.hjust=0)) + 
   scale_y_discrete(expand=c(0.01, 0)) +
   scale_x_continuous(expand=c(0.01, 0)) +
   geom_vline(xintercept = 0,linetype=2) +
   ylab('Ideological Groups') +
-  xlab(expression(alpha[-ig(t-1)]))
+  xlab('Inter-Group Distance')
 
-ggsave('adj_out.png')
+ggsave('adj_par.png')
 
 # calculate difference between time series
 
@@ -341,8 +344,8 @@ get_spread %>%
   geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-04-25','2013-07-03','2013-08-14'))) +
   scale_y_continuous(breaks=c(-1,-0.5,0,0.5,1),
-                     labels=c('Higher\nTunisian\nDifference','-0.5','0.0','0.5',
-                              'Higher\nEgyptian\nDifference')) +
+                     labels=c('Higher\nTunisian\nPolarization','-0.5','0.0','0.5',
+                              'Higher\nEgyptian\nPolarization')) +
   annotate('text',x=as.Date(c('2013-04-25','2013-07-03','2013-07-25','2013-08-14')),
            y=c(0.5,.8,1,-0.6),label=c('New Tunisian\nConstitution',
                                       'Morsi Coup',
