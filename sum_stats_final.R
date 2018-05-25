@@ -16,7 +16,7 @@ source('helper_func.R')
 
 # load fitted rstan model from run_model_IRT_final.R
 
-out_fit_id <- readRDS('out_fit_id_std_VAR_betax_2018-04-16.rds')
+out_fit_id <- readRDS('out_fit_id_std_VAR_betax_2018-05-25.rds')
 to_plot <- as.array(out_fit_id)
 
 # load times data and check for the coup day
@@ -24,7 +24,7 @@ times <- readRDS('times.rds')
 coup_day_new <- times$time_three[times$time_date==as.Date('2013-07-03')]
 
 # currently using elite ideal points with country fixed effects included
-get_time <- rstan::extract(out_fit_id,pars='alpha_country',permute=T)$alpha_country
+get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
 
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
@@ -49,10 +49,10 @@ get_time %>%
   theme(panel.grid=element_blank()) + xlab('') + ylab('Inter-Group Distance') + 
   scale_fill_brewer(palette='RdBu',name='') + 
   scale_linetype(name='') + 
-  geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
+  geom_vline(aes(xintercept=as.numeric(as.Date('2013-07-03'))),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-05-01','2013-07-03','2013-08-14'))) +
-  annotate('text',x=as.Date(c('2013-05-20','2013-07-03','2013-07-25','2013-08-14')),
-           y=c(2.8,2,2.5,0.3),label=c('New Tunisian\nConstitution',
+  annotate('text',x=as.Date(c('2013-05-22','2013-07-03','2013-07-28','2013-08-14')),
+           y=c(3.5,3.1,3.5,0.3),label=c('New Tunisian\nConstitution',
                                   'Morsi Coup',
                                   'Mohamed Brahmi\nAssassination',
                                   'Rabaa Massacre'),
@@ -66,7 +66,7 @@ get_time %>%
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Country)) + theme_minimal() +
   facet_wrap(~Religion,ncol=1,scales='free_y') +
   theme(panel.grid=element_blank()) + xlab('')  + ylab('Inter-Group Distance') + 
-  geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
+  geom_vline(aes(xintercept=as.numeric(as.Date('2013-07-03'))),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-05-01','2013-07-03','2013-08-14'))) 
 ggsave('religion_coint.png')
 
@@ -76,7 +76,7 @@ get_time %>%
   stat_summary(geom='path',fun.y= 'median',aes(linetype=Religion)) + theme_minimal() +
   facet_wrap(~Country,ncol=1,scales='free_y') +
   theme(panel.grid=element_blank()) + xlab('')  + ylab('Inter-Group Distance') + 
-  geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
+  geom_vline(aes(xintercept=as.numeric(as.Date('2013-07-03'))),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-05-01','2013-07-03','2013-08-14'))) 
 ggsave('country_coint.png')
 
@@ -286,7 +286,7 @@ beta_pars %>%
   scale_x_continuous(expand=c(0.01, 0)) +
   geom_vline(xintercept = 0,linetype=2) +
   ylab('Ideological Groups') +
-  xlab(expression(beta[x]))
+  xlab(expression(beta[cgx]))
 
 ggsave('betax.png')
 
@@ -342,7 +342,7 @@ get_spread %>%
   stat_summary(fun.y='median',geom='path',alpha=0.5,colour='red') +
   stat_smooth(se = F) +
   theme(panel.grid=element_blank()) + xlab('') + ylab('') + 
-  geom_vline(aes(xintercept=as.Date('2013-07-03')),linetype=3) +
+  geom_vline(aes(xintercept=as.numeric(as.Date('2013-07-03'))),linetype=3) +
   scale_x_date(breaks=as.Date(c('2013-04-25','2013-07-03','2013-08-14'))) +
   scale_y_continuous(breaks=c(-1,-0.5,0,0.5,1),
                      labels=c('Higher\nTunisian\nPolarization','-0.5','0.0','0.5',

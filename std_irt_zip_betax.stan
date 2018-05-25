@@ -73,7 +73,7 @@ sigma_time[2]);
   
   //post-coup gammas
   
-  //beta_1 ~ normal(0,sigma_beta_1);          
+  beta_1 ~ normal(0,sigma_beta_1);          
   beta_0 ~ normal(0,sigma_beta_0);
   delta_1 ~ normal(0,5);   
   delta_0 ~ normal(0,5);
@@ -82,7 +82,7 @@ sigma_time[2]);
         1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]]);
       } else {
         0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]]);
-        y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n],jj[n]],sigma_overall);
+        y[n] ~ normal(delta_1[kk[n]]*alpha[tt[n] - beta_1[kk[n]],jj[n]],sigma_overall);
       }
     }
 }

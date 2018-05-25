@@ -41,12 +41,10 @@ select(elite_codings2,Username,`Secularist/Islamist`=coding) %>%
         booktabs=T,
         tabular.environment='longtable')
 
-#SQLite databases
-all_tunis <- dbConnect(SQLite(),'data/tunis_tweets.sqlite')
-all_egypt <- dbConnect(SQLite(),'data/egypt_tweets_small.sqlite')
+# load anonymized twitter data (at the citizen level)
 
-tunis_rts <- dbReadTable(all_tunis,'unique_rts')
-egypt_rts <- dbReadTable(all_egypt,'unique_rts')
+tunis_rts <- readRDS('data/tunis_rts_anon.rds')
+egypt_rts <- readRDS('data/egypt_rts_anon.rds')
 
 # get rid of all twitter users who RT less than 3 different people
 
@@ -221,7 +219,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='std_irt_zip_var_betax.stan')
+code_compile <- stan_model(file='irt_var_final.stan')
 
 this_time <- Sys.time()
 
@@ -256,10 +254,12 @@ out_fit_id <- vb(code_compile,
 saveRDS(out_fit_id,paste0('out_fit_id_std_VAR_betax_',as.Date(this_time),'.rds'))
 drive_upload(paste0('out_fit_id_std_VAR_betax_',as.Date(this_time),'.rds'))
 
+
+# plot over-time ideal points for initial check
 to_plot <- as.array(out_fit_id)
 
 get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
-get_time <- get_time[sample(1:nrow(get_time),101),,]
+
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
   bind_rows(.id='Series') %>% 

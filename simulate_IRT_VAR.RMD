@@ -56,6 +56,8 @@ We first draw all the ground truth citizen points/item parameters from normal di
 cit_pt <- rnorm(n=cit)
 # Discrim points
 cit_dis <- rnorm(n=cit)
+# Diff points
+cit_diff <- rnorm(n=cit)
 # separate points for hurdle/missing data model
 abs_cit_pt <- rnorm(n=cit)
 abs_cit_dis <- rnorm(n=cit)
@@ -173,7 +175,7 @@ country_id <- as.integer(combine_ids[,2] %in% c(2,4))
 # first generate probability of actually seeing the tweet
 
 present <- sapply(1:nrow(combine_ids), function(n) {
-  runif(1)>plogis(abs_cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] +
+  runif(1)>plogis(abs_cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] -
                     # country_id[n]*country*abs_cit_dis[cit_ids[n]] - 
                     abs_cit_pt[cit_ids[n]])
 })
@@ -182,7 +184,9 @@ present <- sapply(1:nrow(combine_ids), function(n) {
 
 gen_out <- sapply(1:nrow(combine_ids), function(n) {
   if(present[n]) {
-  outcome <- rnorm(n=1,mean=cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]]) 
+  outcome <- rnorm(n=1,mean=cit_dis[cit_ids[n]]*(combine_vec[time_ids[n],elite_ids[n]] +     
+                                                country_id[n]*country) -
+                                                  cit_diff[cit_ids[n]],sd=1) 
                             # country_id[n]*country*cit_dis[cit_ids[n]])
   return(outcome)
   } else {
@@ -245,7 +249,7 @@ out_fit <- sampling(code_compile,
 saveRDS(list(model=out_fit,true=list(alpha=combine_vec,betax=betax)),'out_fit_simulation.rds')
 ```
 
-We first do an $\hat{R}$ check to make sure the model converged.
+We first do an $\hat{R}$ check to make sure the model converged. Some of the Rhats are higher than 1.1, but further analysis reveals that some of the parameters took longer to converge but are still in the right location, as is evidenced by the plots below.
 
 ```{r rhats}
 stan_rhat(out_fit)
@@ -255,7 +259,7 @@ The model is only weakly-identified in some parameters because of the complexity
 
 ```{r plot_ideal_pts}
 
-ideal_pts <- as.data.frame(out_fit,pars='alpha_country') %>% 
+ideal_pts <- as.data.frame(out_fit,pars='alpha') %>% 
   mutate(iter=1:n()) %>% 
   gather(key='param',value='estimate',-iter) %>% 
   group_by(param) %>% 
@@ -336,7 +340,7 @@ Now we can calculate impulse-response functions (IRFs) and compare those to the 
 
 ```{r calc_irfs}
 
-ints_est <- as.matrix(out_fit,pars='alpha_int_full')
+ints_est <- as.matrix(out_fit,pars='alpha_int')
 betax_est <- as.matrix(out_fit,pars='betax')
 adj_out_est <- as.matrix(out_fit,pars='adj_out')
 adj_in_est <- as.matrix(out_fit,pars='adj_in')
@@ -354,9 +358,9 @@ all_irfs1 <- bind_rows(list(`Islamists\nEgypt`=irf(adj_in=adj_in_est[,1:2],
                                              adj_out=adj_out_est[,c(4,3)])),
                       .id='Series') %>% 
   group_by(Series,time) %>% 
-  summarize(median_est=median(y_irf),
-            upper=quantile(y_irf,.95),
-            lower=quantile(y_irf,.05)) %>% 
+  summarize(median_est=median(y_shock),
+            upper=quantile(y_shock,.95),
+            lower=quantile(y_shock,.05)) %>% 
   mutate(type='Estimated')
 
 

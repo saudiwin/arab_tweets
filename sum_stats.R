@@ -1,4 +1,6 @@
-# Run Summary Stats on integration model
+# Run Summary Stats on the IRT-VAR model
+# this assumes that a model was run
+# the first step is to load the model that was fit by run_model_IRT_final.R
 
 require(dplyr)
 require(ggplot2)
@@ -9,20 +11,13 @@ require(tidyr)
 require(bayesplot)
 require(purrr)
 require(forcats)
-#out_fit_id <- readRDS('data/out_fit_id_2017-08-28 16-53-46.rds')
 
-# to_plot <- as.array(out_fit_id)
-# 
-# mcmc_intervals(to_plot,regex_pars='gamma')
+out_fit_id <- readRDS('out_fit_id_std_VAR_betax_2018-05-25.rds')
 
 gamma11 <- rstan::extract(out_fit_id,pars='gamma11')$gamma11
 gamma12 <- rstan::extract(out_fit_id,pars='gamma12')$gamma12
 gamma21 <- rstan::extract(out_fit_id,pars='gamma21')$gamma21
 gamma22 <- rstan::extract(out_fit_id,pars='gamma22')$gamma22
-# gamma11 <- rstan::extract(out_fit_id,pars='gamma1[1]')$`gamma1[1]` %>% cbind(.,.)
-# gamma12 <- rstan::extract(out_fit_id,pars='gamma1[2]')$`gamma1[2]` %>% cbind(.,.)
-# gamma21 <- rstan::extract(out_fit_id,pars='gamma2[1]')$`gamma2[1]` %>% cbind(.,.)
-# gamma22 <- rstan::extract(out_fit_id,pars='gamma2[2]')$`gamma2[2]` %>% cbind(.,.)
 
 
 all_gammas <- data_frame(`Egyptian Islamists`=gamma11[,2]-gamma11[,1],

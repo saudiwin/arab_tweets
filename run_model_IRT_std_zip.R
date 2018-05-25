@@ -1,4 +1,6 @@
-# Loading data
+# This script loads anonymized Twitter data & codings of elite Twitter users
+# And then fits the IRT-VAR model described in Kubinec and Owen (2018)
+# Note that fitting the full IRT-VAR model will take approximately 1 day & require 16 GB memory
 
 require(dplyr)
 require(tidyr)
@@ -11,9 +13,13 @@ require(forcats)
 require(googledrive)
 require(lubridate)
 
+# aggregate tweets to this many days
 day_count <- 1
-sample_users <- T
 
+# set to true to run model on a sub-sample of users for testing purposes
+sample_users <- F
+
+# load manually coded data
 elite_codings2 <- read_csv('data/check_complete.csv') %>% 
   mutate(coding=paste0(coding,'_',Country),
          coding_num=as.numeric(factor(coding)),
@@ -37,6 +43,17 @@ elite_codings2 <- read_csv('data/check_complete.csv') %>%
          coding_num==3~3,
          coding_num==4~4)) %>% 
   filter(Username!="jasminef_tn")
+
+# write out codings for paper
+
+select(elite_codings2,Username,`Secularist/Islamist`=coding) %>% 
+  xtable::xtable(align='rll') %>% 
+  print(type='latex',file='list_elites.tex',
+        include.rownames=F,
+        floating=F,
+        booktabs=T,
+        tabular.environment='longtable')
+
 
 #SQLite databases
 all_tunis <- dbConnect(SQLite(),'data/tunis_tweets.sqlite')
@@ -210,7 +227,7 @@ start_func <- function() {
 }
 
 
-code_compile <- stan_model(file='std_irt_zip.stan')
+code_compile <- stan_model(file='std_sigma_irt_var_betax.stan')
 
 this_time <- Sys.time()
 

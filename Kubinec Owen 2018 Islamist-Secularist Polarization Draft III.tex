@@ -250,7 +250,7 @@ As this model has not been previously estimated in the literature, we also perfo
 
 \section*{Model Results}
 
-Estimating this model using full Bayesian inference would be computationally prohibitive given the size of the data. To address this big data issue, we employ variational Bayesian inference in which we estimate an approximation to the true posterior by minimizing the Kullback-Leibler divergence between the true posterior and a Normal approximation using the Stan estimation engine \parencite{NIPS2015_5758}. Any additional error created by the use of an approximation is not a concern given the size of the data and the asymptotic properties of minimizing KL divergence \parencite{NIPS2015_5758}. Our variational estimation produced 18,123 each of discrimination $\delta_j$ for all of the citizens in the model, but we will focus on the four group parameters that varied over time $\alpha_{cgt}$, one for each country-ideological pairing: Tunisian secularists, Egyptian secularists, Tunisian Islamists, and Tunisian secularists, as they are our primary focus for inference.
+Estimating this model using full Bayesian inference would be computationally prohibitive given the size of the data. To address this big data issue, we employ variational Bayesian inference in which we estimate an approximation to the true posterior by minimizing the Kullback-Leibler divergence between the true posterior and a Normal approximation using the Stan estimation engine \parencite{NIPS2015_5758}. Any additional error created by the use of an approximation is a minimal concern given the size of the data and the asymptotic properties of minimizing KL divergence \parencite{grimmer2011,NIPS2015_5758}. Our variational estimation produced 18,123 each of discrimination $\delta_j$ for all of the citizens in the model, but we will focus on the four group parameters that varied over time $\alpha_{cgt}$, one for each country-ideological pairing: Tunisian secularists, Egyptian secularists, Tunisian Islamists, and Tunisian secularists, as they are our primary focus for inference.
 
 We first present a plot showing the estimated ideal points for the four ideological groups along with a vertical line showing when the military coup against Mohammed Morsi occurred. The confidence intervals on the chart reflects the 10\%-90\% density region of the approximated posterior, hereafter referred to as the high-posterior density (HPD) interval. From this chart we can make useful descriptive inferences. First, it is clear that in terms of latent inter-group distance, the Islamists are much closer to each other than are the secularists in either country. Substantively, this finding means that Islamist Twitter users share much more in terms of the ideological nature of their retweet patterns relative to secularists. Again, these latent estimates do not necessarily measure the content of beliefs, but rather the relative salience of these ideological divides and the way that these divides manifest themselves on Twitter. Secularists in both countries are farther apart in our latent space because citizens' tweet patterns would not indicate much ideological salience across the groups' networks. 
  \begin{figure}[!h]
@@ -373,7 +373,7 @@ This research opens the door to further exploration of the determinants and meas
 
 \section*{Appendix A: List of Elites}
 
-\include{list_elites.tex}
+\input{list_elites.tex}
 
 \section*{Appendix B: Simulation Study of IRT-VAR}
 
