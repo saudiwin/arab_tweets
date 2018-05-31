@@ -8,3 +8,12 @@ tweets
 *.rds
 *.pdf
 *.html
+*.aux
+*.bbl
+*.bcf
+*.log
+*.out
+*.run
+*synctex.gz
+*.xml
+*.blg

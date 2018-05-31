@@ -33,7 +33,7 @@ elite_codings <- read_csv('data/check_complete.csv') %>%
 
 # write out codings for paper
 
-select(elite_codings2,Username,`Secularist/Islamist`=coding) %>% 
+select(elite_codings,Username,`Secularist/Islamist`=coding) %>% 
   xtable::xtable(align='rll') %>% 
   print(type='latex',file='list_elites.tex',
         include.rownames=F,

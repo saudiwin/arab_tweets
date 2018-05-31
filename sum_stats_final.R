@@ -80,6 +80,113 @@ get_time %>%
   scale_x_date(breaks=as.Date(c('2013-05-01','2013-07-03','2013-08-14'))) 
 ggsave('country_coint.png')
 
+
+# Citizen Ideal Points -----------------------------------------------------
+
+cit_discrim <- as.data.frame(out_fit_id,pars='delta_1') %>% 
+  mutate(iter=1:n()) %>% 
+  gather(key = param1,value=estimate1,-iter) %>% 
+  mutate(cit_id=stringr::str_extract(param1,'\\[[0-9]+'),
+         cit_id=stringr::str_replace(cit_id,'\\[',''),
+         cit_id=as.numeric(cit_id))
+cit_intercepts <- as.data.frame(out_fit_id,pars='beta_1') %>% 
+  mutate(iter=1:n()) %>% 
+  gather(key = param2,value=estimate2,-iter) %>% 
+  mutate(cit_id=stringr::str_extract(param2,'\\[[0-9]+'),
+         cit_id=stringr::str_replace(cit_id,'\\[',''),
+         cit_id=as.numeric(cit_id))
+
+cit_combined <- left_join(cit_discrim,cit_intercepts,by=c('cit_id','iter'))
+
+cit_combined <- group_by(cit_combined,cit_id) %>% 
+  summarize(mid_point=mean((estimate2)/estimate1),
+            mid_point_high=quantile((estimate2)/estimate1,.9),
+            mid_point_low=quantile((estimate2)/estimate1,.1))
+
+# histogram of citizen mid-points
+
+cit_combined %>% 
+  ggplot(aes(x=mid_point)) +
+  geom_histogram() +
+  theme_minimal() +
+  theme(panel.grid=element_blank()) +
+  xlim(c(-2,2)) +
+  xlab('Mid-points on Ideal Point Scale') +
+  ylab('Count of Citizen Twitter Users')
+
+ggsave('cit_midpoints.png')
+
+# just discrimination parameters
+
+cit_discrim %>% group_by(cit_id) %>% 
+  summarize(est=mean(estimate1),
+            high=quantile(estimate1,.9),
+            low=quantile(estimate1,.1)) %>% 
+  ggplot(aes(x=est)) +
+  geom_histogram() +
+  theme_minimal() +
+  theme(panel.grid=element_blank()) +
+  xlim(c(-2,2))
+
+# just intercepts
+
+cit_intercepts %>% group_by(cit_id) %>% 
+  summarize(est=mean(estimate2),
+            high=quantile(estimate2,.9),
+            low=quantile(estimate2,.1)) %>% 
+  ggplot(aes(x=est)) +
+  geom_histogram() +
+  theme_minimal() +
+  theme(panel.grid=element_blank())
+
+# absence discrimination parameters
+
+cit_abs_discrim <- as.data.frame(out_fit_id,pars='delta_0') %>% 
+  mutate(iter=1:n()) %>% 
+  gather(key = param1,value=estimate1,-iter) %>% 
+  mutate(cit_id=stringr::str_extract(param1,'\\[[0-9]+'),
+         cit_id=stringr::str_replace(cit_id,'\\[',''),
+         cit_id=as.numeric(cit_id))
+
+cit_abs_discrim %>% group_by(cit_id) %>% 
+  summarize(est=mean(estimate1),
+            high=quantile(estimate1,.9),
+            low=quantile(estimate1,.1)) %>% 
+  ggplot(aes(x=est)) +
+  geom_histogram() +
+  theme_minimal() +
+  theme(panel.grid=element_blank()) +
+  xlim(c(-4,10))
+
+# let's look at absence midpoints
+
+cit_abs_intercepts <- as.data.frame(out_fit_id,pars='beta_0') %>% 
+  mutate(iter=1:n()) %>% 
+  gather(key = param2,value=estimate2,-iter) %>% 
+  mutate(cit_id=stringr::str_extract(param2,'\\[[0-9]+'),
+         cit_id=stringr::str_replace(cit_id,'\\[',''),
+         cit_id=as.numeric(cit_id))
+
+cit_abs_combined <- left_join(cit_abs_discrim,cit_abs_intercepts,by=c('cit_id','iter'))
+
+cit_abs_combined <- group_by(cit_abs_combined,cit_id) %>% 
+  summarize(mid_point=mean((estimate2)/estimate1),
+            mid_point_high=quantile((estimate2)/estimate1,.9),
+            mid_point_low=quantile((estimate2)/estimate1,.1))
+
+# histogram of citizen mid-points
+
+cit_abs_combined %>% 
+  ggplot(aes(x=mid_point)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlim(c(-10,10)) +
+  theme(panel.grid=element_blank()) +
+  xlab('Mid-points on Ideal Point Scale') +
+  ylab('Count of Citizen Twitter Users')
+
+ggsave('cit_abs_midpoints.png')
+
 # Let's do some impulse response functions
 adj_in <- rstan::extract(out_fit_id,pars='adj_in')$adj_in
 adj_out <- rstan::extract(out_fit_id,pars='adj_out')$adj_out

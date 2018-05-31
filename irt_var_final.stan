@@ -77,7 +77,7 @@ model {
   
     for(n in 1:N) {
       if(y[n]==-9999) {
-        1 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]]  - beta_0[kk[n]]);
+        1 ~ bernoulli_logit(delta_0[kk[n]]*(alpha[tt[n],jj[n]] + country*country_code[n])  - beta_0[kk[n]]);
       } else {
         0 ~ bernoulli_logit(delta_0[kk[n]]*alpha[tt[n],jj[n]] - beta_0[kk[n]]); 
         y[n] ~ normal(delta_1[kk[n]]*(alpha[tt[n],jj[n]] + country*country_code[n]) -
