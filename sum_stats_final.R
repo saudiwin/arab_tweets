@@ -16,7 +16,7 @@ source('helper_func.R')
 
 # load fitted rstan model from run_model_IRT_final.R
 
-out_fit_id <- readRDS('out_fit_id_std_VAR_betax_2018-05-25.rds')
+out_fit_id <- readRDS('out_fit_id_std_VAR_betax_2018-05-31.rds')
 to_plot <- as.array(out_fit_id)
 
 # load times data and check for the coup day
@@ -24,7 +24,7 @@ times <- readRDS('times.rds')
 coup_day_new <- times$time_three[times$time_date==as.Date('2013-07-03')]
 
 # currently using elite ideal points with country fixed effects included
-get_time <- rstan::extract(out_fit_id,pars='alpha',permute=T)$alpha
+get_time <- rstan::extract(out_fit_id,pars='alpha_country',permute=T)$alpha
 
 get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
   lapply(as_data_frame) %>% 
