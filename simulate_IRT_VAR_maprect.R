@@ -23,11 +23,11 @@ elites <- 10
 
 # Number of time points
 
-t <- 100
+t <- 50
 
 # Number of citizens
 
-cit <- 50
+cit <- 10
 
 # Citizen points
 cit_pt <- rnorm(n=cit)
@@ -170,7 +170,7 @@ time_gamma <- c(rep(1L,(t/2)-1),rep(2L,t/2))
 
 # SET NUMBER OF threads to compile model
 
-Sys.setenv(STAN_NUM_THREADS = 4)
+Sys.setenv(STAN_NUM_THREADS = 2)
 
 #function to create starting values
 
@@ -225,10 +225,10 @@ out_fit <- sampling(code_compile,
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
-                      cores=2,
+                      cores=1,
                     control=list(max_treedepth=10),
                     init=start_func,
-                    chains=2,
+                    chains=1,
                     seed=6651)
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='sigma_delta')
