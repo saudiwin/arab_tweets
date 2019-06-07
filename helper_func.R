@@ -23,8 +23,7 @@ gen_ts_data <- function(t,adj_in,adj_out,this_beta,alpha_int,sigma,init_sides,co
     } else {
       t_11 <- alpha_int[1] + adj_in[1]*current_val$t1 +  adj_out[1]*current_val$t2 + this_beta[1] +
         rnorm(n=1,sd=sigma[1])
-      t_12 <- alpha_int[2] + adj_in[2]*current_val$t2 + adj_out[2]*current_val$t1 + this_beta[2] +
-        country + rnorm(n=1,sd=sigma[2])
+      t_12 <- alpha_int[2] + adj_in[2]*current_val$t2 + adj_out[2]*current_val$t1 + this_beta[2] + rnorm(n=1,sd=sigma[2])
     }
     current_val$t1 <- t_11
     current_val$t2 <- t_12
