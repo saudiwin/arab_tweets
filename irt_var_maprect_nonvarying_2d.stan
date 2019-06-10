@@ -185,8 +185,8 @@ model {
   adj_out2 ~ normal(0,3);
   adj_in1 ~ normal(0,3);
   country ~ exponential(.1);
-  sigma_time1 ~ normal(-2,.5); // constrain the variance to push for better identification
-  sigma_time2 ~ normal(-2,.5); // constrain the variance to push for better identification
+  sigma_time1 ~ exponential(4); // constrain the variance to push for better identification
+  sigma_time2 ~ exponential(4); // constrain the variance to push for better identification
   //sigma_overall ~ exponential(.1);
   sigma_beta_0 ~ exponential(.1);
   sigma_beta_1 ~ exponential(.1);
