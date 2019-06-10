@@ -173,12 +173,12 @@ model {
   
   //pin the intercepts for D2
   
-  alpha_int2[1] ~ normal(-1,.1);
-  alpha_int2[2] ~ normal(1,.1);
+  alpha_int2[1] ~ normal(-1,.01);
+  alpha_int2[2] ~ normal(1,.01);
   alpha_int2[3:4] ~ normal(0,3);
   
-  alpha_int1[1] ~ normal(-1,.1);
-  alpha_int1[2] ~ normal(1,.1);
+  alpha_int1[1] ~ normal(-1,.01);
+  alpha_int1[2] ~ normal(1,.01);
   alpha_int1[3:4] ~ normal(0,3);
   adj_out1 ~ normal(0,3);
   adj_in2 ~ normal(0,3);
