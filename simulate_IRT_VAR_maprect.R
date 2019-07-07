@@ -23,26 +23,29 @@ elites <- 10
 
 # Number of time points
 
-t <- 100
+t <- 50
 
 # Number of citizens
 
-cit <- 50
+cit <- 10
 
 # Citizen points
-cit_pt <- rnorm(n=cit)
+cit_pt <- rnorm(n=cit,0,2)
 # cit_pt <- c(-sum(cit_pt),cit_pt)
 # Discrim points
-cit_dis <- rexp(cit,2.5)
-#cit_dis <- c(-1,1,cit_dis)
+cit_dis <- rnorm(n=cit,0,2)
+
+# need absence points
+cit_pt_abs <- rnorm(n=cit,0,2)
+cit_dis_abs <- rnorm(n=cit,0,2)
 
 # Generate side/elite ideal points
 
 init_sides1 <- c(1,1)
 init_sides2 <- c(-1,-1)
 cuts <- c(-1,1)
-adj1 <- .9
-adj2 <- 1.1
+adj1 <- c(.5,.5,.5,.5)
+adj2 <- c(.7,.7,.7,.7)
 
 gamma3 <- 0.1
 gamma4 <- 0.9
@@ -134,11 +137,21 @@ cit_ids <- all_ids$cit_ids
 time_ids <- all_ids$time_ids
 
 gen_out <- sapply(1:nrow(combine_ids), function(n) {
-  outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * combine_vec[time_ids[n],elite_ids[n]] - 
-                                    cit_pt[cit_ids[n]] + .1*(cit_ids[n] %in% c(1,3))))
-  if(is.na(outcome)) {
-    browser()
+  
+  # first cast the dice for absences
+  absent <- plogis(cit_dis_abs[cit_ids[n]] * (combine_vec[time_ids[n],elite_ids[n]] + .1*(cit_ids[n] %in% c(1,3))) - 
+                     cit_pt_abs[cit_ids[n]]) > runif(1)
+  
+  if(absent) {
+    outcome <- 99999
+  } else {
+    outcome <- rpois(n=1,lambda=exp(cit_dis[cit_ids[n]] * (combine_vec[time_ids[n],elite_ids[n]] + .1*(cit_ids[n] %in% c(1,3))) - 
+                                      cit_pt[cit_ids[n]]))
+    if(is.na(outcome)) {
+      browser()
+    }
   }
+  
   return(outcome)
 })
 
@@ -170,7 +183,7 @@ time_gamma <- c(rep(1L,(t/2)-1),rep(2L,t/2))
 
 # SET NUMBER OF threads to compile model
 
-Sys.setenv(STAN_NUM_THREADS = 4)
+Sys.setenv(STAN_NUM_THREADS = 2)
 
 #function to create starting values
 
@@ -197,7 +210,7 @@ start_func <- function() {
 tunisia <- as.numeric(cit_ids %in% c(1,3))
 
 all_data <- cbind(gen_out,tunisia,combine_ids) %>% 
-  as.data.frame %>% 
+  as_tibble %>% 
   gather(key = "variable",value="index",-time_ids) %>% 
   split(f=combine_ids[,'time_ids']) %>% 
   lapply(function(d) d$index)
@@ -225,7 +238,7 @@ out_fit <- sampling(code_compile,
                     coup=as.integer(t/2),
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
-                      cores=2,
+                      cores=1,
                     control=list(max_treedepth=10),
                     init=start_func,
                     chains=2,
@@ -233,8 +246,8 @@ out_fit <- sampling(code_compile,
 to_plot <- as.array(out_fit)
 mcmc_trace(to_plot,pars='sigma_delta')
 mcmc_trace(to_plot,pars='adj[2]')
-adj_est <- as.array(out_fit,'adj')
-mcmc_recover_intervals(x=adj_est,true = c(adj1,adj2))
+adj_est <- as.array(out_fit,'adj_in')
+mcmc_recover_intervals(x=adj_est,true = adj1)
 mcmc_recover_intervals(x=as.array(out_fit,c('gamma1','gamma2')),true = c(gamma1,gamma2,gamma3,gamma4))
 mcmc_recover_intervals(x=as.array(out_fit,'alpha'),true = c(combine_vec))
 
