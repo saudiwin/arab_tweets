@@ -139,7 +139,7 @@ this_time <- Sys.time()
 #     mutate(cit_ids=as.numeric(factor(cit_ids)))
 # }
 
-combined_zero <- filter(combined_zero,rt_count!=max(rt_count))
+#combined_zero <- filter(combined_zero,rt_count!=max(rt_count))
 
 out_fit_id <- sampling(code_compile,
                     data=list(J1=max(combined_zero$coding_num),
@@ -152,7 +152,7 @@ out_fit_id <- sampling(code_compile,
                               jj2=combined_zero$username_num,
                               kk=combined_zero$rt_ids_num,
                               y=combined_zero$rt_count,
-                              country_code=combined_zero$Country),cores=3,chains=3)
+                              country_code=combined_zero$Country),cores=3,chains=3,iter=1000)
 saveRDS(out_fit_id,"static_2d_full.rds")
 
 require(tidybayes)
@@ -170,8 +170,8 @@ all_out <- as.data.frame(out_fit_id,pars=c("alpha1","alpha2_full")) %>%
 
 ids <- data_frame(id=c(unique(combined_zero$coding_num),
                               unique(combined_zero$username_num)),
-                   param_name=c("Islamist Egypt","Islamist Tunisia",
-                                "Secularist Egypt","Secularist Tunisia",
+                   param_name=c("Secularist Egypt","Islamist Egypt",
+                                "Secularist Tunisia","Islamist Tunisia",
                                 unique(as.character(combined_zero$username))),
                   paramtype=c(rep("secularism",4),
                               rep("democracy",length(unique((combined_zero$username_num))))))
@@ -183,6 +183,10 @@ all_out_sum <- group_by(all_out,paramtype,param_name) %>%
             high_est=quantile(est,.95),
             low_est=quantile(est,.05)) %>% 
   filter(!is.na(param_name))
+
+# write out codings
+
+write_csv(all_out_sum,"data/2d_coding.csv")
 
 # plot the buggers
 
@@ -199,45 +203,3 @@ all_out_sum %>%
 
 # mcmc_intervals(to_plot,regex_pars = 'sigma_time')
 # mcmc_intervals(to_plot,regex_pars = c('adj'))
-
-require(tidybayes)
-
-alpha1d <- rstan::extract(out_fit_id,pars='alpha1',permute=T)$alpha
-alpha2d <- rstan::extract(out_fit_id,pars='alpha1',permute=T)$alpha
-get_time <- get_time[sample(1:nrow(get_time),101),,]
-get_time <- lapply(1:dim(get_time)[3],function(x) get_time[,,x]) %>% 
-  lapply(as_data_frame) %>% 
-  bind_rows(.id='Series') %>% 
-  mutate(Series=factor(Series),
-         Series=fct_recode(Series,`Islamist Egypt`='1',
-                           `Islamist Tunisia`='2',
-                           `Secularist Egypt`='3',
-                           `Secularist Tunisia`='4')) %>% 
-  gather(time_pts,out_vals,-Series) %>% 
-  mutate(time_pts=as.numeric(factor(time_pts)))
-
-get_time %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_smooth() + theme_minimal() +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='')
-
-get_time %>% 
-  ggplot(aes(y=out_vals,x=time_pts)) +
-  stat_summary(geom='ribbon',fun.data = 'median_hilow',fill='grey80') + theme_minimal() +
-  stat_summary(fun.y='median',geom='path',linetype=2) +
-  theme(panel.grid=element_blank()) + xlab('Time') + ylab('Ideological Positions') + 
-  scale_colour_brewer(palette='paired',name='') + 
-  facet_wrap(~Series) +
-  scale_linetype(name='') + 
-  geom_vline(aes(xintercept=coup_day_new),linetype=3)
-
-ggsave('arab_ideology.png')
-
-
-deltas <- rstan::extract(out_fit_id,pars='delta_1',permuted=T)$delta
-betas <- rstan::extract(out_fit_id,pars='beta_0',permuted=T)$beta
-apply(deltas,2,mean) %>% hist
-apply(betas,2,mean) %>% hist

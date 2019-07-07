@@ -36,35 +36,40 @@ transformed parameters {
 
 model {
 
-  alpha2_free ~ normal(0,1);
-  alpha1 ~ normal(0,1);
+  alpha2_free ~ normal(0,1); // allow non-constrained to float
+  alpha1[1] ~ normal(-1,.001);
+  alpha1[4] ~ normal(1,.001);
+  alpha1[2] ~ normal(0,3);
+  alpha1[3] ~ normal(0,3);
 
   country ~ exponential(1);
   sigma_beta_0 ~ exponential(1);
   
-  democrats ~ normal(2,.01);
-  antidem ~ normal(-2,.01);
+  democrats[1:4] ~ normal(2,.001);
+  antidem[1:2] ~ normal(-2,.001);
+  democrats[4:id_num_high] ~ normal(0,3);
+  antidem[id_num_low] ~ normal(0,3);
 
 //citizen priors
-  beta_0 ~ normal(0,sigma_beta_0);
+  //beta_0 ~ normal(0,sigma_beta_0);
+  beta_0 ~ normal(0,3);
   beta_1 ~ normal(0,3);
   delta_11 ~ normal(0,3);   
   delta_21 ~ normal(0,3);
   delta_10 ~ normal(0,3);   
   delta_20 ~ normal(0,3);   
-    // for(n in 1:N) {
-    //   if(y[n]==99999) {
-    //     1 ~ bernoulli_logit(delta_10[kk[n]]*alpha1[jj1[n]] +
-    //                         delta_20[kk[n]]*alpha2_full[jj2[n]] - beta_0[kk[n]]);
-    //   } else {
-    //     0 ~ bernoulli_logit(delta_10[kk[n]]*alpha1[jj1[n]] +
-    //                         delta_20[kk[n]]*alpha2_full[jj2[n]] - beta_0[kk[n]]);
-    //     y[n] ~ poisson_log(delta_11[kk[n]]*alpha1[jj1[n]] +
-    //                   delta_11[kk[n]]*country*country_code[n] +
-    //                   delta_21[kk[n]]*alpha2_full[jj2[n]] - beta_1[kk[n]]);
-    //   }
-    // }
+    for(n in 1:N) {
+      if(y[n]==99999) {
+        1 ~ bernoulli_logit(delta_10[kk[n]]*alpha1[jj1[n]] +
+                            delta_20[kk[n]]*alpha2_full[jj2[n]] - beta_0[kk[n]]);
+      } else {
+        0 ~ bernoulli_logit(delta_10[kk[n]]*alpha1[jj1[n]] +
+                            delta_20[kk[n]]*alpha2_full[jj2[n]] - beta_0[kk[n]]);
+        y[n] ~ poisson_log(delta_11[kk[n]]*alpha1[jj1[n]] +
+                      delta_21[kk[n]]*alpha2_full[jj2[n]] - beta_1[kk[n]]);
+      }
+    }
     
-    y ~ poisson_log(delta_11[kk].*(alpha1[jj1] + country*country_code) +
-                    delta_21[kk].*alpha2_full[jj2] - beta_1[kk]);
+    // y ~ poisson_log(delta_11[kk].*alpha1[jj1] +
+    //                 delta_21[kk].*alpha2_full[jj2] - beta_1[kk]);
 }
