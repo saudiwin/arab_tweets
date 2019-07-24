@@ -102,10 +102,10 @@ parameters {
   vector[T*J] alpha2;               // dimension 2: democracy vs. authoritarianism
   vector[K] beta_0;                // zero difficulty of question k
   vector[K] beta_1;                // zero difficulty of question k
-  vector<lower=-1,upper=1>[4] adj_in1;  //adjustment parameters
-  vector<lower=-1,upper=1>[4] adj_out1; //adjustment parameters
-  vector<lower=-1,upper=1>[4] adj_in2;  //adjustment parameters
-  vector<lower=-1,upper=1>[4] adj_out2; //adjustment parameters
+  vector<lower=-.9,upper=.9>[4] adj_in1;  //adjustment parameters
+  vector<lower=-.9,upper=.9>[4] adj_out1; //adjustment parameters
+  vector<lower=-.9,upper=.9>[4] adj_in2;  //adjustment parameters
+  vector<lower=-.9,upper=.9>[4] adj_out2; //adjustment parameters
   vector[4] alpha_int1; //drift
   vector[4] alpha_int2; //drift
   vector[4] betax1; //effects of coup

@@ -141,7 +141,7 @@ We then loop over the number of time points to generate the ideal points of the 
                           alpha_int=alpha_int2[1:2],
                           this_beta=betax2[1:2],
                           sigma=sigma2[1:2],
-                          init_sides=init_sides1,
+                          init_sides=rnorm(sides/2),
                           country=country)
   
    out_vec4 <- gen_ts_data(t=t,
@@ -150,7 +150,7 @@ We then loop over the number of time points to generate the ideal points of the 
                           alpha_int=alpha_int2[3:4],
                           this_beta=betax2[3:4],
                           sigma=sigma2[3:4],
-                          init_sides=init_sides2,
+                          init_sides=rnorm(sides/2),
                           country=country)
 
 combine_vec1 <- bind_cols(out_vec1,out_vec2) %>% as.matrix
@@ -209,7 +209,7 @@ country_id <- as.integer(combine_ids[,2] %in% c(2,4))
 # first generate probability of actually seeing the tweet
 
 present <- sapply(1:nrow(combine_ids), function(n) {
-  runif(1)>plogis(abs_cit_dis1[cit_ids[n]] * (combine_vec1[time_ids[n],elite_ids[n]]) +
+  runif(1)<plogis(abs_cit_dis1[cit_ids[n]] * (combine_vec1[time_ids[n],elite_ids[n]]) +
                     abs_cit_dis2[cit_ids[n]] * combine_vec2[time_ids[n],elite_ids[n]] -
                     abs_cit_pt[cit_ids[n]])
 })
@@ -269,7 +269,7 @@ start_func <- function() {
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
        sigma_time1=rep(0.25,sides),
-       sigma_time1=rep(0.25,sides),
+       sigma_time2=rep(0.25,sides),
        adj_in1=c(-0.25,0.25,-0.25,0.25),
        adj_out1=c(0.25,-0.25,0.25,-0.25),
        adj_in2=c(-0.25,0.25,-0.25,0.25),
