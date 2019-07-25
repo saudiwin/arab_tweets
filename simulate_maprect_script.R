@@ -28,13 +28,10 @@ t <- 50
 # Number of citizens
 
 cit <- 100
-```
+
 
 ## Simulation
 
-We first draw all the ground truth citizen points/item parameters from normal distributions:
-  
-  ```{r ideal_pts}
 # Intercepts points
 cit_pt <- rnorm(n=cit)
 # Discrim points
@@ -46,10 +43,7 @@ cit_diff <- rnorm(n=cit)
 abs_cit_pt <- rnorm(n=cit)
 abs_cit_dis1 <- rnorm(n=cit)
 abs_cit_dis2 <- rnorm(n=cit)
-```
 
-We also draw ancillary parameters:
-  ```{r other_params}
 init_sides1 <- rnorm(sides/2)
 init_sides2 <- rnorm(sides/2)
 cuts <- c(-1,1)
@@ -232,4 +226,4 @@ stan_data <- list(J=sides,
                   start_vals=c(init_sides1,init_sides2),
                   time_gamma=time_gamma)
 
-stan_rdump(stan_data,"data_2d_stan.R")
+stan_rdump(ls(stan_data),"data_2d_stan.R",envir = list2env(stan_data))
