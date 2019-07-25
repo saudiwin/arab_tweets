@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#SBATCH	–n	56
+
+
+#SBATCH	-p	parallel
+
+module purge
+
+module load openmpi/1.10.2 gcc/4.9.3
+
+mpirun	-np 28 /home/rmk7/arab_tweets/irt_var_maprect_nonvarying_2d sample data file=/home/rmk7/arab_tweets/data_2d_stan.R output file=/scratch/rmk7/arab_sim.csv
