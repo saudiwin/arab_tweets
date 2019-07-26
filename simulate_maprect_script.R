@@ -27,7 +27,7 @@ t <- 50
 
 # Number of citizens
 
-cit <- 100
+cit <- 280
 
 
 ## Simulation
