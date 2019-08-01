@@ -11,7 +11,7 @@ require(bayesplot)
 
 source('helper_func.R')
 
-Sys.setenv(STAN_NUM_THREADS = 2)
+Sys.setenv(STAN_NUM_THREADS = 280)
 
 # Number of sides
 
