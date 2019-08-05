@@ -27,8 +27,8 @@ functions {
     
     
     // get alphas for this time point
-    matrix[T,J] alpha1 = to_matrix(allparams[1:T*J],T,J);
-    matrix[T,J] alpha2 = to_matrix(allparams[(T*J+1):(2*T*J)],T,J);
+    // matrix[T,J] alpha1 = to_matrix(allparams[1:T*J],T,J);
+    // matrix[T,J] alpha2 = to_matrix(allparams[(T*J+1):(2*T*J)],T,J);
      
     
     //unpack allparams
@@ -52,8 +52,10 @@ functions {
   
     for(n in 1:N) {
       
-      real this_alpha1 = alpha1[tt[n],jj[n]];
-      real this_alpha2 = alpha2[tt[n],jj[n]];
+      real this_alpha1 = allparams[(T*(jj[n]-1))+tt[n]];
+      real this_alpha2 = allparams[(T*J + T*(jj[n]-1))+tt[n]];
+      // real this_alpha1 = alpha1[tt[n],jj[n]];
+      // real this_alpha2 = alpha2[tt[n],jj[n]];
       
       if(gen_out[n]==99999) {
         real lp =  bernoulli_logit_lpmf(1 | delta_10*this_alpha1  +
@@ -68,7 +70,7 @@ functions {
         lp_out[n] = lp + ll;
       }
     }
-   return [sum(lp_out)]'; // return joint probability of the shard
+   return [sum(lp_out) + normal_lpdf(cit|0,3)]'; // return joint probability of the shard
  }
 }
 data {
@@ -88,7 +90,7 @@ transformed data {
   // varying is easy for citizens
   // static must include *all* time-varying parameters as they *cannot* vary across shards
   int vP = 6; // need all citizen parameters discrimination + difficulty for one citizen = 4 parameters
-  int dP = 2*T*J + 2*J*5 + 1; // all alpha parameters plus adjustment/betax/sigmas/country
+  int dP = 2*T*J; // all alpha parameters plus adjustment/betax/sigmas/country
   //need a vector to pad the time-varying parameters for the case when T=1
   vector[J] padT = rep_vector(0,J);
   real x_r[S,0]; // nothing vector to fil out map_rect 
@@ -151,18 +153,7 @@ transformed parameters {
   // 10. country
   
   
-  dparams = append_row(alpha1,
-            append_row(alpha2,
-            append_row(sigma_time1,
-            append_row(sigma_time2,
-            append_row(adj_in1,
-            append_row(adj_in2,
-            append_row(adj_out1,
-            append_row(adj_out2,
-            append_row(betax1,
-            append_row(betax2,
-            append_row(alpha_int1,
-            append_row(alpha_int2,country))))))))))));
+  dparams = append_row(alpha1,alpha2);
   
 }
 
@@ -195,12 +186,7 @@ model {
 //citizen priors
   //beta_0 ~ normal(0,sigma_beta_0);
   //beta_1 ~ normal(0,sigma_beta_1);
-  beta_0 ~ normal(0,3);
-  beta_1 ~ normal(0,3);
-  delta_11 ~ normal(0,3);   
-  delta_10 ~ normal(0,3);
-  delta_21 ~ normal(0,3);   
-  delta_20 ~ normal(0,3);
+  
   to_vector(alpha_mat1[1,1:J]) ~ normal(0,3);
   to_vector(alpha_mat2[1,1:J]) ~ normal(0,3);
   
