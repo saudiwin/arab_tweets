@@ -96,14 +96,16 @@ transformed data {
   real x_r[S,0]; // nothing vector to fil out map_rect 
 }
 parameters {    
-  vector[K] delta_11;                  // non-zero discriminations
-  vector[K] delta_10;                  // zero discriminations
-  vector[K] delta_21;                  // non-zero discriminations
-  vector[K] delta_20;                  // zero discriminations
-  vector[T*J] alpha1;               // dimension 1: islamism vs. secularism
-  vector[T*J] alpha2;               // dimension 2: democracy vs. authoritarianism
-  vector[K] beta_0;                // zero difficulty of question k
-  vector[K] beta_1;                // zero difficulty of question k
+  // vector[K] delta_11;                  // non-zero discriminations
+  // vector[K] delta_10;                  // zero discriminations
+  // vector[K] delta_21;                  // non-zero discriminations
+  // vector[K] delta_20;                  // zero discriminations
+  vector[vP] varparams[S];
+  vector[dP] dparams;
+  // vector[T*J] alpha1;               // dimension 1: islamism vs. secularism
+  // vector[T*J] alpha2;               // dimension 2: democracy vs. authoritarianism
+  // vector[K] beta_0;                // zero difficulty of question k
+  // vector[K] beta_1;                // zero difficulty of question k
   vector<lower=-.9,upper=.9>[4] adj_in1;  //adjustment parameters
   vector<lower=-.9,upper=.9>[4] adj_out1; //adjustment parameters
   vector<lower=-.9,upper=.9>[4] adj_in2;  //adjustment parameters
@@ -112,32 +114,31 @@ parameters {
   vector[4] alpha_int2; //drift
   vector[4] betax1; //effects of coup
   vector[4] betax2; //effects of coup
-  real<lower=0> country; //dummy for country-level fixed effects
+  //real<lower=0> country; //dummy for country-level fixed effects
   vector<lower=0>[4] sigma_time1; //heteroskedastic variance by ideological group
   vector<lower=0>[4] sigma_time2; //heteroskedastic variance by ideological group
-  real<lower=0> sigma_beta_0; //hierarchical variance for zero betas
-  real<lower=0> sigma_beta_1; //hierarchical variance for zero betas
+  //real<lower=0> sigma_beta_0; //hierarchical variance for zero betas
+  //real<lower=0> sigma_beta_1; //hierarchical variance for zero betas
   //real<lower=0> sigma_overall; //variance for top-level normal distribution
 }
 
 transformed parameters {
   // pack all the citizen parameters into an array vector for usage in map_rect
-  vector[vP] varparams[S];
+  
   //all elite params are in non-varying vectors
-  vector[dP] dparams;
   
   // construct by looping over T and shards
   // where we known that T = number of shards
   
-  for(s in 1:S) {
-      //discrim then difficulty
-      varparams[s] = append_row(delta_11[s],append_row(delta_10[s],
-                                            append_row(delta_21[s],
-                                            append_row(delta_20[s],
-                                           append_row(beta_1[s],
-                                                      [beta_0[s]]')))));
-    
-  }
+  // for(s in 1:S) {
+  //     //discrim then difficulty
+  //     varparams[s] = append_row(delta_11[s],append_row(delta_10[s],
+  //                                           append_row(delta_21[s],
+  //                                           append_row(delta_20[s],
+  //                                          append_row(beta_1[s],
+  //                                                     [beta_0[s]]')))));
+  //   
+  // }
   
   // append all other parameters to one big vector that is passed to all shards
   // order: 
@@ -152,15 +153,15 @@ transformed parameters {
   // 9. alpha_int for J
   // 10. country
   
-  
-  dparams = append_row(alpha1,alpha2);
+  // 
+  // dparams = append_row(alpha1,alpha2);
   
 }
 
 model {
   
-  matrix[T,J] alpha_mat1 = to_matrix(alpha1,T,J); // need to reconvert alpha for priors
-  matrix[T,J] alpha_mat2 = to_matrix(alpha2,T,J); // need to reconvert alpha for priors
+  matrix[T,J] alpha_mat1 = to_matrix(dparams[1:T*J],T,J); // need to reconvert alpha for priors
+  matrix[T,J] alpha_mat2 = to_matrix(dparams[(T*J+1):(2*T*J)],T,J);
   
   //pin the intercepts for D2
   
@@ -175,12 +176,10 @@ model {
   adj_in2 ~ normal(0,3);
   adj_out2 ~ normal(0,3);
   adj_in1 ~ normal(0,3);
-  country ~ exponential(.1);
+
   sigma_time1 ~ exponential(4); // constrain the variance to push for better identification
   sigma_time2 ~ exponential(4); // constrain the variance to push for better identification
   //sigma_overall ~ exponential(.1);
-  sigma_beta_0 ~ exponential(.1);
-  sigma_beta_1 ~ exponential(.1);
   betax1 ~ normal(0,5);
   betax2 ~ normal(0,5);
 //citizen priors
@@ -236,15 +235,4 @@ model {
   
   target += sum(map_rect(overT, dparams, varparams, time_points, alldata));
 
-}
-
-generated quantities {
-  matrix[T,J] alpha1_m = to_matrix(alpha1,T,J);
-  matrix[T,J] alpha2_m = to_matrix(alpha2,T,J);
-  // matrix[T,J] alpha_country; //recalculate alpha with country intercepts included  
-  // 
-  // alpha_country[,1] = alpha1_m[,1];
-  // alpha_country[,2] = alpha1_m[,2] + country;
-  // alpha_country[,3] = alpha1_m[,3];
-  // alpha_country[,4] = alpha1_m[,4] + country;
 }
