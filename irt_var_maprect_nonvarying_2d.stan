@@ -52,8 +52,8 @@ functions {
   
     for(n in 1:N) {
       
-      real this_alpha1 = allparams[(T*(jj[n]-1))+tt[n]];
-      real this_alpha2 = allparams[(T*J + T*(jj[n]-1))+tt[n]];
+      real this_alpha1 = allparams[(J*(tt[n]-1))+jj[n]];
+      real this_alpha2 = allparams[(T*J + J*(tt[n]-1))+jj[n]];
       // real this_alpha1 = alpha1[tt[n],jj[n]];
       // real this_alpha2 = alpha2[tt[n],jj[n]];
       
@@ -101,28 +101,36 @@ parameters {
   // vector[K] delta_21;                  // non-zero discriminations
   // vector[K] delta_20;                  // zero discriminations
   vector[vP] varparams[S];
-  vector[dP] dparams;
   // vector[T*J] alpha1;               // dimension 1: islamism vs. secularism
   // vector[T*J] alpha2;               // dimension 2: democracy vs. authoritarianism
   // vector[K] beta_0;                // zero difficulty of question k
   // vector[K] beta_1;                // zero difficulty of question k
-  vector<lower=-.9,upper=.9>[4] adj_in1;  //adjustment parameters
-  vector<lower=-.9,upper=.9>[4] adj_out1; //adjustment parameters
-  vector<lower=-.9,upper=.9>[4] adj_in2;  //adjustment parameters
-  vector<lower=-.9,upper=.9>[4] adj_out2; //adjustment parameters
+  vector<lower=-1,upper=1>[4] adj_in1;  //adjustment parameters
+  vector<lower=-1,upper=1>[4] adj_out1; //adjustment parameters
+  vector<lower=-1,upper=1>[4] adj_in2;  //adjustment parameters
+  vector<lower=-1,upper=1>[4] adj_out2; //adjustment parameters
   vector[4] alpha_int1; //drift
   vector[4] alpha_int2; //drift
   vector[4] betax1; //effects of coup
   vector[4] betax2; //effects of coup
+  vector[dP-(2*J)] dparams_nonc; // non-centering time series
   //real<lower=0> country; //dummy for country-level fixed effects
-  vector<lower=0>[4] sigma_time1; //heteroskedastic variance by ideological group
-  vector<lower=0>[4] sigma_time2; //heteroskedastic variance by ideological group
+  vector<lower=0>[3] sigma_time1; //heteroskedastic variance by ideological group
+  vector<lower=0>[3] sigma_time2; //heteroskedastic variance by ideological group
   //real<lower=0> sigma_beta_0; //hierarchical variance for zero betas
   //real<lower=0> sigma_beta_1; //hierarchical variance for zero betas
   //real<lower=0> sigma_overall; //variance for top-level normal distribution
 }
 
 transformed parameters {
+  
+    vector[dP] dparams;
+    vector[J] sigma_time1_con;
+    vector[J] sigma_time2_con;
+    
+    sigma_time1_con = append_row([.1]',sigma_time1);
+    sigma_time2_con = append_row([.1]',sigma_time2);
+  
   // pack all the citizen parameters into an array vector for usage in map_rect
   
   //all elite params are in non-varying vectors
@@ -156,29 +164,60 @@ transformed parameters {
   // 
   // dparams = append_row(alpha1,alpha2);
   
+  for(t in 1:T) {
+    if(t==1) {
+      dparams[1:J] = alpha_int1;
+      dparams[(T*J+1):(T*J+J)] = alpha_int2;
+    } else {
+      for(j in 1:J) {
+        int other;
+        if(j==1) {
+          other = 2;
+        } else if(j==2) {
+          other=1;
+        } else if(j==3) {
+          other=4;
+        } else if(j==4) {
+          other=3;
+        }
+        dparams[((t-1)*J + j)] = alpha_int1[j] +
+                              adj_in1[j]*dparams[((t-2)*J + j)] +
+                              adj_out1[j]*dparams[((t-2)*J + other)] +
+                              betax1[j]*time_gamma[t-1] +
+                              sigma_time1_con[j]*dparams_nonc[((t-1)*J + j)];
+        dparams[(T*J + (t-1)*J +j)] = alpha_int2[j] +
+                              adj_in2[j]*dparams[((t-2)*J + j + T*J)] +
+                              adj_out2[j]*dparams[((t-2)*J + other + T*J)] +
+                              betax2[j]*time_gamma[t-1] +
+                              sigma_time2_con[j]*dparams_nonc[((t-2)*J + j + (T-1)*J)];
+      }
+    }
+  }
+  
 }
 
 model {
   
-  matrix[T,J] alpha_mat1 = to_matrix(dparams[1:T*J],T,J); // need to reconvert alpha for priors
-  matrix[T,J] alpha_mat2 = to_matrix(dparams[(T*J+1):(2*T*J)],T,J);
-  
+  // matrix[T,J] alpha_mat1 = to_matrix(dparams[1:T*J],T,J); // need to reconvert alpha for priors
+  // matrix[T,J] alpha_mat2 = to_matrix(dparams[(T*J+1):(2*T*J)],T,J);
+  // 
   //pin the intercepts for D2
   
   alpha_int2[1] ~ normal(-1,.01);
   alpha_int2[2] ~ normal(1,.01);
   alpha_int2[3:4] ~ normal(0,3);
   
-  alpha_int1[1] ~ normal(-1,.01);
-  alpha_int1[2] ~ normal(1,.01);
+  alpha_int1[1] ~ normal(1,.01);
+  alpha_int1[2] ~ normal(-1,.01);
   alpha_int1[3:4] ~ normal(0,3);
-  adj_out1 ~ normal(0,3);
-  adj_in2 ~ normal(0,3);
-  adj_out2 ~ normal(0,3);
-  adj_in1 ~ normal(0,3);
+  adj_out1 ~ normal(0,2);
+  adj_in2 ~ normal(0,2);
+  adj_out2 ~ normal(0,2);
+  adj_in1 ~ normal(0,2);
+  dparams_nonc ~ normal(0,1); // non-centering time series prior
 
-  sigma_time1 ~ exponential(4); // constrain the variance to push for better identification
-  sigma_time2 ~ exponential(4); // constrain the variance to push for better identification
+  sigma_time1 ~ exponential(1); // constrain the variance to push for better identification
+  sigma_time2 ~ exponential(1); // constrain the variance to push for better identification
   //sigma_overall ~ exponential(.1);
   betax1 ~ normal(0,5);
   betax2 ~ normal(0,5);
@@ -186,48 +225,45 @@ model {
   //beta_0 ~ normal(0,sigma_beta_0);
   //beta_1 ~ normal(0,sigma_beta_1);
   
-  to_vector(alpha_mat1[1,1:J]) ~ normal(0,3);
-  to_vector(alpha_mat2[1,1:J]) ~ normal(0,3);
-  
     //VAR priors with constraints on who influences who
   
-  alpha_mat1[2:T,1] ~ normal(alpha_int1[1] + adj_in1[1]*alpha_mat1[1:(T-1),1] +
-                        adj_out1[1]*alpha_mat1[1:(T-1),2] +
-                        betax1[1]*time_gamma,
-                sigma_time1[1]);
-
-  alpha_mat1[2:T,2] ~ normal(alpha_int1[2] + adj_in1[2]*alpha_mat1[1:(T-1),2] +
-                        adj_out1[2]*alpha_mat1[1:(T-1),1] +
-                        betax1[2]*time_gamma,
-                sigma_time1[2]);
-  alpha_mat1[2:T,3] ~ normal(alpha_int1[3] + adj_in1[3]*alpha_mat1[1:(T-1),3] +
-                        adj_out1[3]*alpha_mat1[1:(T-1),4] +
-                        betax1[3]*time_gamma,
-                sigma_time1[3]);
-
-  alpha_mat1[2:T,4] ~ normal(alpha_int1[4] + adj_in1[4]*alpha_mat1[1:(T-1),4] +
-                        adj_out1[4]*alpha_mat1[1:(T-1),3] +
-                        betax1[4]*time_gamma,
-                sigma_time1[4]);
-                
-  alpha_mat2[2:T,1] ~ normal(alpha_int2[1] + adj_in2[1]*alpha_mat2[1:(T-1),1] +
-                        adj_out2[1]*alpha_mat2[1:(T-1),2] +
-                        betax2[1]*time_gamma,
-                sigma_time2[1]);
-
-  alpha_mat2[2:T,2] ~ normal(alpha_int2[2] + adj_in2[2]*alpha_mat2[1:(T-1),2] +
-                        adj_out2[2]*alpha_mat2[1:(T-1),1] +
-                        betax2[2]*time_gamma,
-                sigma_time2[2]);
-  alpha_mat2[2:T,3] ~ normal(alpha_int2[3] + adj_in2[3]*alpha_mat2[1:(T-1),3] +
-                        adj_out2[3]*alpha_mat2[1:(T-1),4] +
-                        betax2[3]*time_gamma,
-                sigma_time2[3]);
-
-  alpha_mat2[2:T,4] ~ normal(alpha_int2[4] + adj_in2[4]*alpha_mat2[1:(T-1),4] +
-                        adj_out2[4]*alpha_mat2[1:(T-1),3] +
-                        betax2[4]*time_gamma,
-                sigma_time2[4]);
+  // alpha_mat1[2:T,1] ~ normal(alpha_int1[1] + adj_in1[1]*alpha_mat1[1:(T-1),1] +
+  //                       adj_out1[1]*alpha_mat1[1:(T-1),2] +
+  //                       betax1[1]*time_gamma,
+  //               .1);
+  // 
+  // alpha_mat1[2:T,2] ~ normal(alpha_int1[2] + adj_in1[2]*alpha_mat1[1:(T-1),2] +
+  //                       adj_out1[2]*alpha_mat1[1:(T-1),1] +
+  //                       betax1[2]*time_gamma,
+  //               sigma_time1[1]);
+  // alpha_mat1[2:T,3] ~ normal(alpha_int1[3] + adj_in1[3]*alpha_mat1[1:(T-1),3] +
+  //                       adj_out1[3]*alpha_mat1[1:(T-1),4] +
+  //                       betax1[3]*time_gamma,
+  //               sigma_time1[2]);
+  // 
+  // alpha_mat1[2:T,4] ~ normal(alpha_int1[4] + adj_in1[4]*alpha_mat1[1:(T-1),4] +
+  //                       adj_out1[4]*alpha_mat1[1:(T-1),3] +
+  //                       betax1[4]*time_gamma,
+  //               sigma_time1[3]);
+  //               
+  // alpha_mat2[2:T,1] ~ normal(alpha_int2[1] + adj_in2[1]*alpha_mat2[1:(T-1),1] +
+  //                       adj_out2[1]*alpha_mat2[1:(T-1),2] +
+  //                       betax2[1]*time_gamma,
+  //               .1);
+  // 
+  // alpha_mat2[2:T,2] ~ normal(alpha_int2[2] + adj_in2[2]*alpha_mat2[1:(T-1),2] +
+  //                       adj_out2[2]*alpha_mat2[1:(T-1),1] +
+  //                       betax2[2]*time_gamma,
+  //               sigma_time2[1]);
+  // alpha_mat2[2:T,3] ~ normal(alpha_int2[3] + adj_in2[3]*alpha_mat2[1:(T-1),3] +
+  //                       adj_out2[3]*alpha_mat2[1:(T-1),4] +
+  //                       betax2[3]*time_gamma,
+  //               sigma_time2[2]);
+  // 
+  // alpha_mat2[2:T,4] ~ normal(alpha_int2[4] + adj_in2[4]*alpha_mat2[1:(T-1),4] +
+  //                       adj_out2[4]*alpha_mat2[1:(T-1),3] +
+  //                       betax2[4]*time_gamma,
+  //               sigma_time2[3]);
 
 
   
@@ -236,3 +272,14 @@ model {
   target += sum(map_rect(overT, dparams, varparams, time_points, alldata));
 
 }
+generated quantities {
+  matrix[J,T] alpha1_m = to_matrix(dparams[1:(T*J)],J,T);
+  matrix[J,T] alpha2_m = to_matrix(dparams[(T*J+1):(2*T*J)],J,T);
+  // matrix[T,J] alpha_country; //recalculate alpha with country intercepts included  
+  // 
+  // alpha_country[,1] = alpha1_m[,1];
+  // alpha_country[,2] = alpha1_m[,2] + country;
+  // alpha_country[,3] = alpha1_m[,3];
+  // alpha_country[,4] = alpha1_m[,4] + country;
+}
+
