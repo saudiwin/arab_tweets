@@ -35,7 +35,7 @@ These are parameters that control various factors in the simulation:
 
 # for parallel processing = number of cores available
 
-Sys.setenv(STAN_NUM_THREADS = 2)
+Sys.setenv(STAN_NUM_THREADS = 3)
 
 # Number of sides
 
@@ -47,11 +47,11 @@ elites <- 12
 
 # Number of time points
 
-t <- 50
+t <- 20
 
 # Number of citizens
 
-cit <- 100
+cit <- 50
 ```
 
 ## Simulation
@@ -90,8 +90,8 @@ adj_in2 <- runif(sides,min = -0.5,max=0.5)
 adj_out2 <- runif(sides,min = -0.5,max=0.5)
 alpha1 <- rnorm(sides)
 alpha2 <- rnorm(sides)
-sigma1 <- rnorm(sides,0.1,0.02)
-sigma2 <- rnorm(sides,0.1,0.02)
+sigma1 <- c(.1,rnorm(sides-1,0.1,0.02))
+sigma2 <- c(.1,rnorm(sides,0.1,0.02))
 country <- .5
 ```
 
@@ -142,7 +142,7 @@ We then loop over the number of time points to generate the ideal points of the 
                           this_beta=betax2[1:2],
                           sigma=sigma2[1:2],
                           init_sides=rnorm(sides/2),
-                          country=country)
+                          country=0)
   
    out_vec4 <- gen_ts_data(t=t,
                           adj_in=adj_in2[3:4],
@@ -151,7 +151,7 @@ We then loop over the number of time points to generate the ideal points of the 
                           this_beta=betax2[3:4],
                           sigma=sigma2[3:4],
                           init_sides=rnorm(sides/2),
-                          country=country)
+                          country=0)
 
 combine_vec1 <- bind_cols(out_vec1,out_vec2) %>% as.matrix
 combine_vec2 <- bind_cols(out_vec3,out_vec4) %>% as.matrix
@@ -268,8 +268,8 @@ start_func <- function() {
   list(alpha=runif(t*sides,min = -0.5,max=0.5),
        gamma1=c(0.5,0.5),
        gamma2=c(0.5,0.5),
-       sigma_time1=rep(0.25,sides),
-       sigma_time2=rep(0.25,sides),
+       sigma_time1=rep(0.1,sides-1),
+       sigma_time2=rep(0.1,sides-1),
        adj_in1=c(-0.25,0.25,-0.25,0.25),
        adj_out1=c(0.25,-0.25,0.25,-0.25),
        adj_in2=c(-0.25,0.25,-0.25,0.25),
@@ -289,7 +289,7 @@ time_counter <- as.matrix(1:t,ncol=1)
 
 out_fit <- sampling(code_compile,
                     data=list(J=sides,
-                              nshards=t,
+                              nshards=cit,
                               K=cit,
                               `T`=t,
                               C=5,
@@ -303,11 +303,11 @@ out_fit <- sampling(code_compile,
                     start_vals=c(init_sides1,init_sides2),
                     time_gamma=time_gamma),
                       cores=1,
-                    control=list(max_treedepth=10),
+                    control=list(max_treedepth=15),
                     init=start_func,
-                    chains=2,
+                    chains=4,
                     seed=6651)
-saveRDS(list(model=out_fit,true=list(alpha=c(combine_vec1,combine_vec2),betax=c(betax1,betax2))),'out_fit_simulation_maprect.rds')
+saveRDS(list(model=out_fit,true=list(alpha=c(combine_vec1,combine_vec2),betax=c(betax1,betax2))),'data/out_fit_simulation_maprect_nonvarying.rds')
 ```
 
 We first do an $\hat{R}$ check to make sure the model converged. Some of the Rhats are higher than 1.1, but further analysis reveals that some of the parameters took longer to converge but are still in the right location, as is evidenced by the plots below.
@@ -330,8 +330,8 @@ ideal_pts <- as.data.frame(out_fit,pars='alpha1_m') %>%
 
 param_names <- str_extract_all(unique(ideal_pts$param),pattern='[0-9]+')
 
-time_pts <- sapply(param_names,function(x) as.numeric(x[2]))
-ideal_code <- sapply(param_names,function(x) as.numeric(x[3]))
+time_pts <- sapply(param_names,function(x) as.numeric(x[3]))
+ideal_code <- sapply(param_names,function(x) as.numeric(x[2]))
 			
 ideal_pts <- mutate(ideal_pts,
                     time_pt=time_pts,
@@ -396,8 +396,8 @@ ideal_pts <- as.data.frame(out_fit,pars='alpha2_m') %>%
 
 param_names <- str_extract_all(unique(ideal_pts$param),pattern='[0-9]+')
 
-time_pts <- sapply(param_names,function(x) as.numeric(x[2]))
-ideal_code <- sapply(param_names,function(x) as.numeric(x[3]))
+time_pts <- sapply(param_names,function(x) as.numeric(x[3]))
+ideal_code <- sapply(param_names,function(x) as.numeric(x[2]))
 			
 ideal_pts <- mutate(ideal_pts,
                     time_pt=time_pts,
@@ -472,7 +472,7 @@ ints_est <- as.matrix(out_fit,pars='alpha_int1')
 betax_est <- as.matrix(out_fit,pars='betax1')
 adj_out_est <- as.matrix(out_fit,pars='adj_out1')
 adj_in_est <- as.matrix(out_fit,pars='adj_in1')
-country_est <- as.matrix(out_fit,pars='country')
+#country_est <- as.matrix(out_fit,pars='country')
 
 
 

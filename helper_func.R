@@ -15,8 +15,8 @@ gen_ts_data <- function(t,adj_in,adj_out,this_beta,alpha_int,sigma,init_sides,co
       this_beta <- this_beta
     }
     if(t_1==1) {
-      t_11 <- init_sides[1]
-      t_12 <- init_sides[2]
+      t_11 <- alpha_int[1]
+      t_12 <- alpha_int[2]
       current_val$t1 <- t_11
       current_val$t2 <- t_12
       return(data_frame(t_11,t_12))
@@ -31,6 +31,70 @@ gen_ts_data <- function(t,adj_in,adj_out,this_beta,alpha_int,sigma,init_sides,co
   })  %>% bind_rows
   return(out_vec2)
 }
+
+gen_ts_data_mvn <- function(t,adj_in1,adj_out1,
+                            adj_in2,adj_out2,
+                            this_beta1,
+                            this_beta2,
+                            alpha_int1,
+                            alpha_int2,
+                            sigma1,
+                            sigma2,
+                            init_sides1,
+                            init_sides2,country) {
+  current_val <- new.env()
+  current_val$t1d1 <- 0
+  current_val$t2d1 <- 0
+  current_val$t1d2 <- 0
+  current_val$t2d2 <- 0
+  
+  out_vec2 <- lapply(1:t,function(t_1) {
+    
+    if(t_1<(t/2)) {
+      this_beta1 <- rep(0,sides)
+      this_beta2 <- rep(0,sides)
+    } else {
+      this_beta1 <- this_beta1
+      this_beta2 <- this_beta2
+    }
+    if(t_1==1) {
+      t_11d1 <- init_sides1[1]
+      t_12d1 <- init_sides1[2]
+      t_11d2 <- init_sides2[1]
+      t_12d2 <- init_sides2[2]
+      current_val$t1d1 <- t_11d1
+      current_val$t2d1 <- t_12d1
+      current_val$t1d2 <- t_11d2
+      current_val$t2d2 <- t_12d2
+      return(data_frame(t_1d1,t_2d1,
+                        t_1d2,t_2d2))
+    } else {
+      t_11d1 <- alpha_int1[1] + adj_in1[1]*current_val$t1d1 +  adj_out1[1]*current_val$t2d1 + this_beta1[1]
+      t_12d1 <- alpha_int1[2] + adj_in1[2]*current_val$t2d1 + adj_out1[2]*current_val$t1d1 + this_beta1[2]
+      t_11d2 <- alpha_int2[1] + adj_in2[1]*current_val$t1d2 +  adj_out2[1]*current_val$t2d2 + this_beta2[1]
+      t_12d2 <- alpha_int2[2] + adj_in2[2]*current_val$t2d2 + adj_out2[2]*current_val$t1d2 + this_beta2[2]
+      # now generate errors via mvrnorm across dimensions
+
+      t_1 <- MASS::mvrnorm(n=1,mu=c(t_11d1,
+                                   t_11d2),
+                          sigma=sigma1)
+      
+      t_2 <- MASS::mvrnorm(n=1,mu=c(t_11d1,
+                                   t_11d2),
+                          sigma=sigma1)
+      
+      
+    }
+    current_val$t1d1 <- t_1[1]
+    current_val$t2d1 <- t_2[1]
+    current_val$t1d2 <- t_1[2]
+    current_val$t2d2 <- t_2[2]
+    return(data_frame(t_1d1=t_1[1],t_2d1=t_2[1],
+                      t_1d2=t_1[2],t_2d2=t_2[2]))
+  })  %>% bind_rows
+  return(out_vec2)
+}
+
 
 # generate IRFs
 
