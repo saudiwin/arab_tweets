@@ -83,8 +83,8 @@ parameters {
   vector[4] betax1; //effects of coup
   vector[4] betax2; //effects of coup
   vector[dP-(2*J)] dparams_nonc; // non-centering time series
-  vector<lower=0>[3] sigma_time1; //heteroskedastic variance by ideological group
-  vector<lower=0>[3] sigma_time2; //heteroskedastic variance by ideological group
+  vector<lower=0.01,upper=0.25>[3] sigma_time1; //heteroskedastic variance by ideological group
+  vector<lower=0.01,upper=0.25>[3] sigma_time2; //heteroskedastic variance by ideological group
 }
 
 transformed parameters {
@@ -181,8 +181,8 @@ model {
   adj_in1 ~ normal(0,2);
   dparams_nonc ~ normal(0,1); // non-centering time series prior
 
-  sigma_time1 ~ inv_gamma(30,3); // constrain the variance to push for better identification
-  sigma_time2 ~ inv_gamma(30,3); // constrain the variance to push for better identification
+  sigma_time1 ~ normal(0,3); // constrain the variance to push for better identification
+  sigma_time2 ~ normal(0,3); // constrain the variance to push for better identification
   //sigma_overall ~ exponential(.1);
   betax1 ~ normal(0,3);
   betax2 ~ normal(0,3);
