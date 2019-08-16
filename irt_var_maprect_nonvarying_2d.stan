@@ -170,22 +170,22 @@ model {
   
   alpha_int2[1] ~ normal(1,.01);
   alpha_int2[2] ~ normal(-1,.01);
-  alpha_int2[3:4] ~ normal(0,3);
+  alpha_int2[3:4] ~ normal(0,1);
   
   alpha_int1[1] ~ normal(-1,.01);
   alpha_int1[2] ~ normal(1,.01);
-  alpha_int1[3:4] ~ normal(0,3);
+  alpha_int1[3:4] ~ normal(0,1);
   adj_out1 ~ normal(0,2);
   adj_in2 ~ normal(0,2);
   adj_out2 ~ normal(0,2);
   adj_in1 ~ normal(0,2);
   dparams_nonc ~ normal(0,1); // non-centering time series prior
 
-  sigma_time1 ~ exponential(1); // constrain the variance to push for better identification
-  sigma_time2 ~ exponential(1); // constrain the variance to push for better identification
+  sigma_time1 ~ inv_gamma(30,3); // constrain the variance to push for better identification
+  sigma_time2 ~ inv_gamma(30,3); // constrain the variance to push for better identification
   //sigma_overall ~ exponential(.1);
-  betax1 ~ normal(0,5);
-  betax2 ~ normal(0,5);
+  betax1 ~ normal(0,3);
+  betax2 ~ normal(0,3);
   
   // parallelize the likelihood with map_rect
   

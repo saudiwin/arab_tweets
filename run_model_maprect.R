@@ -60,7 +60,7 @@ egypt_rts <- dbReadTable(all_egypt,'unique_rts')
 
 # get rid of all twitter users who RT less than 3 different people
 
-filter_tunis <- group_by(tunis_rts,rt_ids,username) %>% count %>% group_by(rt_ids) %>% count() %>% filter(n>5)
+filter_tunis <- group_by(tunis_rts,rt_ids,username) %>% count %>% group_by(rt_ids) %>% count()
 
 filter_tunis %>% ggplot(aes(x=n)) +
   geom_histogram() +
@@ -75,7 +75,7 @@ ggsave('tunis_users_RTS.png')
 
 # same for egypt
 
-filter_egypt <- group_by(egypt_rts,rt_ids,username) %>% count %>% group_by(rt_ids) %>% count() %>% filter(n>5)
+filter_egypt <- group_by(egypt_rts,rt_ids,username) %>% count %>% group_by(rt_ids) %>% count()
 
 filter_egypt %>% ggplot(aes(x=n)) +
   geom_histogram() +
@@ -128,6 +128,38 @@ combined_data_small <- left_join(combined_data,
                                 coding_numd1,
                                 coding_numd2,
                                 rt_ids,coup) %>% tally
+
+# we want to drop all users that don't RT multiple groups over time 
+# at least once
+
+keep_rts_d1 <- distinct(ungroup(combined_data_small),
+                       coding_numd1,
+                       n,
+                       rt_ids) %>% 
+  group_by(rt_ids) %>% 
+  summarize(n_rts=sum(n),
+            n_dist=length(unique(coding_numd1)),
+            n_times=n()) %>% 
+  filter(n_dist>1,
+         n_times>2)
+
+keep_rts_d2 <- distinct(ungroup(combined_data_small),
+                        coding_numd2,
+                        n,
+                        rt_ids) %>% 
+  group_by(rt_ids) %>% 
+  summarize(n_rts=sum(n),
+            n_dist=length(unique(coding_numd2)),
+            n_times=n()) %>% 
+  filter(n_dist>1,
+         n_times>2)
+
+# only keep users who RT one of 2 groups at least once
+
+combine_lists <- full_join(select(keep_rts_d1,rt_ids),
+                           select(keep_rts_d2,rt_ids))
+
+combined_data_small <- left_join(combine_lists,combined_data_small)
 
 # drop missing
 
@@ -249,3 +281,22 @@ time_gamma=distinct(times,time_three,coup) %>% slice(-n()) %>% pull(coup))
 stan_rdump(ls(out_data),file="data/to_maprect_cluster.R",
            envir = list2env(out_data))
 
+# create initial starting values
+
+init_list <- list(dparams_nonc=runif((2*out_data$J*out_data$T)-(2*out_data$J),min = -0.25,max=0.25),
+     sigma_time1=rep(0.1,3),
+     sigma_time2=rep(0.1,3),
+     adj_in1=c(-0.25,0.25,0.25,0.25),
+     adj_out1=c(0.25,0.25,0.25,0.25),
+     adj_in2=c(-0.25,0.25,0.25,0.25),
+     adj_out2=c(0.25,0.25,0.25,0.25),
+     alpha_int1=rep(0,4),
+     alpha_int2=rep(0,4),
+     betax1=runif(4,-0.5,0.5),
+     betax2=runif(4,-0.5,0.5),
+     varparams=matrix(ifelse(runif(dim(all_data_array)[2]*6)>.5,
+                             -1,
+                             1)))
+
+stan_rdump(ls(init_list),file="data/to_maprect_init.R",
+           envir = list2env(init_list))
