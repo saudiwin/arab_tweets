@@ -83,8 +83,8 @@ parameters {
   vector[4] betax1; //effects of coup
   vector[4] betax2; //effects of coup
   vector[dP-(2*J)] dparams_nonc; // non-centering time series
-  vector<lower=0.01,upper=0.25>[3] sigma_time1; //heteroskedastic variance by ideological group
-  vector<lower=0.01,upper=0.25>[3] sigma_time2; //heteroskedastic variance by ideological group
+  //vector<lower=0.01,upper=0.25>[3] sigma_time1; //heteroskedastic variance by ideological group
+  //vector<lower=0.01,upper=0.25>[3] sigma_time2; //heteroskedastic variance by ideological group
 }
 
 transformed parameters {
@@ -93,8 +93,8 @@ transformed parameters {
     vector[J] sigma_time1_con;
     vector[J] sigma_time2_con;
     
-    sigma_time1_con = append_row([.1]',sigma_time1);
-    sigma_time2_con = append_row([.1]',sigma_time2);
+    sigma_time1_con = [.1,.1,.1,.1]';
+    sigma_time2_con = [.1,.1,.1,.1]';
   
   // pack all the citizen parameters into an array vector for usage in map_rect
   
@@ -170,19 +170,19 @@ model {
   
   alpha_int2[1] ~ normal(1,.01);
   alpha_int2[2] ~ normal(-1,.01);
-  alpha_int2[3:4] ~ normal(0,1);
+  alpha_int2[3:4] ~ normal(0,3);
   
   alpha_int1[1] ~ normal(-1,.01);
   alpha_int1[2] ~ normal(1,.01);
-  alpha_int1[3:4] ~ normal(0,1);
+  alpha_int1[3:4] ~ normal(0,3);
   adj_out1 ~ normal(0,2);
   adj_in2 ~ normal(0,2);
   adj_out2 ~ normal(0,2);
   adj_in1 ~ normal(0,2);
   dparams_nonc ~ normal(0,1); // non-centering time series prior
 
-  sigma_time1 ~ normal(0,3); // constrain the variance to push for better identification
-  sigma_time2 ~ normal(0,3); // constrain the variance to push for better identification
+  //sigma_time1 ~ normal(0,3); // constrain the variance to push for better identification
+  //sigma_time2 ~ normal(0,3); // constrain the variance to push for better identification
   //sigma_overall ~ exponential(.1);
   betax1 ~ normal(0,3);
   betax2 ~ normal(0,3);
