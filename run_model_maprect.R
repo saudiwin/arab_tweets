@@ -19,7 +19,7 @@ require(lubridate)
 day_count <- 1
 
 # whether to run a sample for testing purposes
-sample_users <- F
+sample_users <- T
 
 # Load in revised codings
 # remove jasmine foundation because it is a-political
@@ -219,7 +219,9 @@ combined_zero <- select(combined_data_small_nomis,time_three,coding_numd1,
                         coding_numd2,coup,n,cit_ids) %>% 
                         complete(cit_ids,nesting(coding_numd1,
                                  coding_numd2),time_three,fill=list(n=99999)) %>% 
-  mutate(coup=if_else(time_three>coup_day_new,2L,1L))
+  mutate(coup=if_else(time_three>coup_day_new,2L,1L),
+         coding_numd1=as.numeric(factor(coding_numd1)),
+         coding_numd2=as.numeric(factor(coding_numd2)))
 
 # now collapse missing and non-missing
 
@@ -233,11 +235,11 @@ if(sample_users==T) {
   keep_users <- ungroup(lookat_cit_ratio) %>% 
     mutate(cit_ids=as.numeric(factor(rt_ids))) %>% 
     filter(prop_group<.9) %>% 
-    arrange(desc(n)) %>% slice(1:10000) %>% 
+    arrange(desc(n)) %>% slice(1:10) %>% 
     select(cit_ids) %>% 
     distinct
   combined_zero <- inner_join(keep_users,combined_zero,by=c('cit_ids')) %>% 
-    distinct(cit_ids,coding_num,time_three,.keep_all=T) %>% 
+    distinct(cit_ids,coding_numd1,coding_numd2,time_three,.keep_all=T) %>% 
     mutate(cit_ids=as.numeric(factor(cit_ids)))
 }
 
@@ -283,20 +285,30 @@ stan_rdump(ls(out_data),file="data/to_maprect_cluster.R",
 
 # create initial starting values
 
-init_list <- list(dparams_nonc=runif((2*out_data$J*out_data$T)-(2*out_data$J),min = -0.25,max=0.25),
-     sigma_time1=rep(0.1,3),
+init_list <- list(varparams=array(rnorm(all_data_array[2]*6,0,0.25),
+                                  dim=c(dim(all_data_array)[2],
+                                                  ncol=6)),
+                  dparams_nonc=runif((2*out_data$J*out_data$T)-(2*out_data$J),min = -0.25,max=0.25),
+                  sigma_time1=rep(0.1,3),
      sigma_time2=rep(0.1,3),
-     adj_in1=c(-0.25,0.25,0.25,0.25),
-     adj_out1=c(0.25,0.25,0.25,0.25),
-     adj_in2=c(-0.25,0.25,0.25,0.25),
-     adj_out2=c(0.25,0.25,0.25,0.25),
-     alpha_int1=rep(0,4),
-     alpha_int2=rep(0,4),
+     adj_in1=rep(0,4),
+     adj_out1=rep(0,4),
+     adj_in2=rep(0,4),
+     adj_out2=rep(0,4),
+     alpha_int1=c(-1,1,0.5,-0.5),
+     alpha_int2=c(1,-1,-0.5,0.5),
      betax1=runif(4,-0.5,0.5),
-     betax2=runif(4,-0.5,0.5),
-     varparams=matrix(ifelse(runif(dim(all_data_array)[2]*6)>.5,
-                             -1,
-                             1)))
+     betax2=runif(4,-0.5,0.5))
 
 stan_rdump(ls(init_list),file="data/to_maprect_init.R",
            envir = list2env(init_list))
+
+# actually run the model 
+
+# current_stan_mod <- stan_model(file="irt_var_maprect_nonvarying_2d.stan")
+# 
+# test_stan <- sampling(current_stan_mod,
+#                       data=out_data,
+#                       chains=1,
+#                       cores=1,
+#                       iter=100)
