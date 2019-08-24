@@ -100,34 +100,10 @@ transformed parameters {
   
   //all elite params are in non-varying vectors
   
-  // construct by looping over T and shards
-  // where we known that T = number of shards
-  
-  // for(s in 1:S) {
-  //     //discrim then difficulty
-  //     varparams[s] = append_row(delta_11[s],append_row(delta_10[s],
-  //                                           append_row(delta_21[s],
-  //                                           append_row(delta_20[s],
-  //                                          append_row(beta_1[s],
-  //                                                     [beta_0[s]]')))));
-  //   
-  // }
-  
   // append all other parameters to one big vector that is passed to all shards
-  // order: 
-  // 1. discrim abs for K
-  // 2. diff abs for K
-  // 3. discrim obs for K
-  // 4. diff obs for K
-  // 5. sigmas for J
-  // 6. adj_in for J
-  // 7. ajd_out for J
-  // 8. betax for J
-  // 9. alpha_int for J
-  // 10. country
-  
-  // 
-  // dparams = append_row(alpha1,alpha2);
+  // order.
+  // pack this vector in a way that allows for time series to 
+  // influence each other via heirarchical priors
   
   for(t in 1:T) {
     if(t==1) {
@@ -163,9 +139,6 @@ transformed parameters {
 
 model {
   
-  // matrix[T,J] alpha_mat1 = to_matrix(dparams[1:T*J],T,J); // need to reconvert alpha for priors
-  // matrix[T,J] alpha_mat2 = to_matrix(dparams[(T*J+1):(2*T*J)],T,J);
-  // 
   //pin the intercepts for D2
   
   alpha_int2[1] ~ normal(1,.01);
@@ -181,9 +154,10 @@ model {
   adj_in1 ~ normal(0,2);
   dparams_nonc ~ normal(0,1); // non-centering time series prior
 
-  sigma_time1 ~ inv_gamma(30,3); // constrain the variance to push for better identification
-  sigma_time2 ~ inv_gamma(30,3); // constrain the variance to push for better identification
-  //sigma_overall ~ exponential(.1);
+  //sigma_time1 ~ inv_gamma(30,3); // constrain the variance to push for better identification
+  //sigma_time2 ~ inv_gamma(30,3); // constrain the variance to push for better identification
+  sigma_time1 ~ exponential(1);
+  sigma_time2 ~ exponential(1);
   betax1 ~ normal(0,3);
   betax2 ~ normal(0,3);
   
