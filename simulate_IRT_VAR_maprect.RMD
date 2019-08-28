@@ -243,9 +243,13 @@ all_data <- cbind(gen_out,country_id,combine_ids) %>%
 
 all_data_array <- abind::abind(all_data,along=2)
 
+missingd <- apply(all_data_array,2,function(c) sum(c[4:(length(gen_out)/cit)]==99999))
+
+
 # create matrix of IDs to pass along with data
 
-all_data_array <- rbind(matrix(c(rep(sides,ncol(all_data_array)),
+all_data_array <- rbind(matrix(c(missingd,
+                                 rep(sides,ncol(all_data_array)),
                                  rep(t,ncol(all_data_array)),
                                  rep(t/2,ncol(all_data_array))),ncol=ncol(all_data_array),byrow = T),
                         all_data_array)
@@ -256,7 +260,7 @@ Given this outcome, we can now fit the model in Stan.
 
 ```{r fit_model}
 
-code_compile <- stan_model(file='irt_var_maprect_nonvarying_2d.stan')
+code_compile <- stan_model(file='irt_var_maprect_nonvarying_2d_v3.stan')
 
 # need to create time variable for gamma
 
@@ -274,6 +278,8 @@ start_func <- function() {
        adj_out1=c(0.25,-0.25,0.25,-0.25),
        adj_in2=c(-0.25,0.25,-0.25,0.25),
        adj_out2=c(0.25,-0.25,-0.25,0.25),
+       alpha_int1=c(-1,0,0,0),
+       alpha_int2=c(1,0,0,0),
        mean_delta=1,
        mean_beta=0,
        sigma_beta=1,
@@ -307,7 +313,7 @@ out_fit <- sampling(code_compile,
                     init=start_func,
                     chains=4,
                     seed=6651)
-saveRDS(list(model=out_fit,true=list(alpha=c(combine_vec1,combine_vec2),betax=c(betax1,betax2))),'data/out_fit_simulation_maprect_nonvarying.rds')
+saveRDS(list(model=out_fit,true=list(alpha=c(combine_vec1,combine_vec2),betax=c(betax1,betax2))),'data/out_fit_simulation_maprect_nonvarying_v3.rds')
 ```
 
 We first do an $\hat{R}$ check to make sure the model converged. Some of the Rhats are higher than 1.1, but further analysis reveals that some of the parameters took longer to converge but are still in the right location, as is evidenced by the plots below.

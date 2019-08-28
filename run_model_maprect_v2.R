@@ -249,6 +249,7 @@ all_data <- combined_zero %>%
   select(-coup) %>% 
   mutate(country=1L) %>% 
   select(cit_ids,n,country,time_three,coding_numd1,coding_numd2) %>% 
+  arrange(cit_ids,desc(n)) %>% 
   gather(key = "variable",value="index",-cit_ids) %>% 
   split(f=combined_zero$cit_ids) %>% 
   lapply(function(d) d$index)
@@ -257,9 +258,14 @@ all_data <- combined_zero %>%
 
 all_data_array <- abind::abind(all_data,along=2)
 
+# calculate missing data per shard
+num_shard <- length(unique(combined_zero$cit_ids))
+missingd <- apply(all_data_array,2,function(c) sum(c[4:(nrow(combined_zero)/num_shard)]==99999))
+
 # create matrix of IDs to pass along with data
 
-all_data_array <- rbind(matrix(c(rep(max(combined_zero$coding_numd1),ncol(all_data_array)),
+all_data_array <- rbind(matrix(c(missingd,
+                                 rep(max(combined_zero$coding_numd1),ncol(all_data_array)),
                                  rep(max(combined_zero$time_three),ncol(all_data_array)),
                                  rep(coup_day_new,ncol(all_data_array))),ncol=ncol(all_data_array),byrow = T),
                         all_data_array)
@@ -280,8 +286,8 @@ time_points=as.matrix(1:max(combined_zero$cit_ids)),
 start_vals=rep(c(-.5,-.5,.5,.5),2),
 time_gamma=distinct(times,time_three,coup) %>% slice(-n()) %>% pull(coup))
 
-stan_rdump(ls(out_data),file="data/to_maprect_cluster.R",
-           envir = list2env(out_data))
+# stan_rdump(ls(out_data),file="data/to_maprect_cluster.R",
+#            envir = list2env(out_data))
 
 # create initial starting values
 
@@ -307,10 +313,10 @@ init_list <- list(varparams=array(rnorm(all_data_array[2]*6,0,0.25),
 
 Sys.setenv(STAN_NUM_THREADS = 1)
 
-current_stan_mod <- stan_model(file="irt_var_maprect_nonvarying_2d.stan")
+current_stan_mod <- stan_model(file="irt_var_maprect_nonvarying_2d_v3.stan")
 
 test_stan <- sampling(current_stan_mod,
                       data=out_data,
-                      chains=4,
-                      cores=4,
+                      chains=1,
+                      cores=1,
                       iter=1000)
