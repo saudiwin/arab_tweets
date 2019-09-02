@@ -311,7 +311,7 @@ init_list <- list(varparams=array(rnorm(all_data_array[2]*6,0,0.25),
 
 # actually run the model 
 
-Sys.setenv(STAN_NUM_THREADS = 1)
+Sys.setenv(STAN_NUM_THREADS = 4)
 
 current_stan_mod <- stan_model(file="irt_var_maprect_nonvarying_2d_v3.stan")
 
@@ -319,4 +319,4 @@ test_stan <- sampling(current_stan_mod,
                       data=out_data,
                       chains=1,
                       cores=1,
-                      iter=1000)
+                      iter=2000)
