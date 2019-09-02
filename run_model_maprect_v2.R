@@ -249,8 +249,8 @@ all_data <- combined_zero %>%
   select(-coup) %>% 
   mutate(country=1L) %>% 
   select(cit_ids,n,country,time_three,coding_numd1,coding_numd2) %>% 
-  arrange(cit_ids,desc(n)) %>% 
   gather(key = "variable",value="index",-cit_ids) %>% 
+  arrange(cit_ids,desc(index)) %>% 
   split(f=combined_zero$cit_ids) %>% 
   lapply(function(d) d$index)
 
