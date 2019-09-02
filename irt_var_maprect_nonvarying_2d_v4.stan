@@ -8,15 +8,15 @@ functions {
     int T = allintdata[3];
     int coup = allintdata[4];
     real t = time_points[1];
-    int N = (num_elements(allintdata)-4)/4; // has to be hard-coded unfortunately, no way to 
+    int N = (num_elements(allintdata)-4)/5; // has to be hard-coded unfortunately, no way to 
                                         // pass other info in
     int gen_out_miss[miss] = rep_array(1,miss); // retrieve indices in order
     int gen_out_nomiss[N-miss] = rep_array(0,N-miss);
     int gen_out_obs[N-miss] = allintdata[(miss+5):(N+4)];
     int country_code[N] = allintdata[(N+5):(2*N+4)];
-    //int tt[N] = allintdata[((2*N)+5):(3*N+4)];
-    int jj1[N] = allintdata[((2*N)+5):(3*N+4)];
-    int jj2[N] = allintdata[((3*N)+5):(4*N+4)];
+    int tt[N] = allintdata[((2*N)+5):(3*N+4)];
+    int jj1[N] = allintdata[((3*N)+5):(4*N+4)];
+    int jj2[N] = allintdata[((4*N)+5):(5*N+4)];
     // citizen params 
     
     real delta_11 = cit[1];
@@ -59,8 +59,7 @@ functions {
                                   beta_1;
     }
     
-    log_lik[1] = bernoulli_logit_lpmf(gen_out_miss|delta_10.*all_params[jj1]  +
-                                        delta_20.*all_params[jj2] - beta_0) + 
+    log_lik[1] = bernoulli_logit_lpmf(gen_out_miss|linear_miss) + 
            bernoulli_logit_lpmf(gen_out_nomiss|linear_obs1) + 
            poisson_log_lpmf(gen_out_obs|linear_obs2) +
            normal_lpdf(cit|0,3);
@@ -110,9 +109,14 @@ transformed parameters {
     vector[dP] dparams;
     vector[J] sigma_time1_con;
     vector[J] sigma_time2_con;
+    //vector[J] betax1;
+    //vector[J] betax2;
     
     sigma_time1_con = append_row([.1]',sigma_time1);
     sigma_time2_con = append_row([.1]',sigma_time2);
+    
+   // betax1 = append_row([0.0]',betax1_free);
+  //  betax2 = append_row([0.0]',betax2_free);
   
   // pack all the citizen parameters into an array vector for usage in map_rect
   
@@ -161,11 +165,11 @@ model {
   
   alpha_int2[1] ~ normal(1,.01);
   alpha_int2[2] ~ normal(-1,.01);
-  alpha_int2[3:4] ~ normal(0,3);
+  alpha_int2[2:4] ~ normal(0,3);
   
   alpha_int1[1] ~ normal(-1,.01);
   alpha_int1[2] ~ normal(1,.01);
-  alpha_int1[3:4] ~ normal(0,3);
+  alpha_int1[2:4] ~ normal(0,3);
   adj_out1 ~ normal(0,2);
   adj_in2 ~ normal(0,2);
   adj_out2 ~ normal(0,2);

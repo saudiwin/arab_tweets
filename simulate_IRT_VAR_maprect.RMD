@@ -35,7 +35,7 @@ These are parameters that control various factors in the simulation:
 
 # for parallel processing = number of cores available
 
-Sys.setenv(STAN_NUM_THREADS = 3)
+Sys.setenv(STAN_NUM_THREADS = 10)
 
 # Number of sides
 
@@ -81,7 +81,7 @@ betax1 <- rnorm(sides,0,.25)
 betax2 <- rnorm(sides,0,.25)
 #intercepts
 alpha_int1 <- c(-1,1,rnorm(2,0,0.25))
-alpha_int2 <- c(-1,1,rnorm(2,0,0.25))
+alpha_int2 <- c(1,-1,rnorm(2,0,0.25))
 # to generate adjustment parameters, we draw from the unit circle
 unit_pts <- pracma::randp(n=sides)
 adj_in1 <- runif(sides,min = -0.5,max=0.5)
@@ -233,18 +233,22 @@ gen_out <- sapply(1:nrow(combine_ids), function(n) {
 
 # create version of the data suitable for map-reduce with Stan (maprect function)
 
-all_data <- cbind(gen_out,country_id,combine_ids) %>% 
+all_data <- cbind(gen_out,country_id,combine_ids,combine_ids[,2]) %>% 
   as_tibble %>% 
-  gather(key = "variable",value="index",-cit_ids) %>% 
-  split(f=combine_ids[,'cit_ids']) %>% 
+  rename(coding_numd1="elite_ids",
+         coding_numd2="V6") %>% 
+  arrange(cit_ids,desc(gen_out)) %>% 
+  gather(key = "variable",value="index",-cit_ids)
+
+all_data_split <- all_data %>% 
+  split(f=all_data$cit_ids) %>% 
   lapply(function(d) d$index)
 
 
 
-all_data_array <- abind::abind(all_data,along=2)
+all_data_array <- abind::abind(all_data_split,along=2)
 
-missingd <- apply(all_data_array,2,function(c) sum(c[4:(length(gen_out)/cit)]==99999))
-
+missingd <- apply(all_data_array,2,function(col) sum(col[1:(length(gen_out)/cit)]==99999))
 
 # create matrix of IDs to pass along with data
 
@@ -260,7 +264,7 @@ Given this outcome, we can now fit the model in Stan.
 
 ```{r fit_model}
 
-code_compile <- stan_model(file='irt_var_maprect_nonvarying_2d_v3.stan')
+code_compile <- stan_model(file='irt_var_maprect_nonvarying_2d_v4.stan')
 
 # need to create time variable for gamma
 
