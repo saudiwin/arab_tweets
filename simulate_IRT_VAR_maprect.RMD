@@ -91,7 +91,7 @@ adj_out2 <- runif(sides,min = -0.5,max=0.5)
 alpha1 <- rnorm(sides)
 alpha2 <- rnorm(sides)
 sigma1 <- c(.1,rnorm(sides-1,0.1,0.02))
-sigma2 <- c(.1,rnorm(sides,0.1,0.02))
+sigma2 <- c(.1,rnorm(sides-1,0.1,0.02))
 country <- .5
 ```
 
@@ -121,7 +121,7 @@ We then loop over the number of time points to generate the ideal points of the 
    out_vec2 <- gen_ts_data(t=t,
                           adj_in=adj_in1[3:4],
                           adj_out=adj_out1[3:4],
-                          alpha_int=alpha_int1[2:3],
+                          alpha_int=alpha_int1[3:4],
                           this_beta=betax1[3:4],
                           sigma=sigma1[3:4],
                           init_sides=init_sides2,
@@ -264,7 +264,7 @@ Given this outcome, we can now fit the model in Stan.
 
 ```{r fit_model}
 
-code_compile <- stan_model(file='irt_var_maprect_nonvarying_2d_v4.stan')
+code_compile <- stan_model(file='irt_var_maprect_nonvarying_2d_v5.stan')
 
 # need to create time variable for gamma
 
@@ -282,8 +282,8 @@ start_func <- function() {
        adj_out1=c(0.25,-0.25,0.25,-0.25),
        adj_in2=c(-0.25,0.25,-0.25,0.25),
        adj_out2=c(0.25,-0.25,-0.25,0.25),
-       alpha_int1=c(-1,0,0,0),
-       alpha_int2=c(1,0,0,0),
+       alpha_int1=c(-1,1,0,0),
+       alpha_int2=c(1,-1,0,0),
        mean_delta=1,
        mean_beta=0,
        sigma_beta=1,
@@ -317,7 +317,7 @@ out_fit <- sampling(code_compile,
                     init=start_func,
                     chains=4,
                     seed=6651)
-saveRDS(list(model=out_fit,true=list(alpha=c(combine_vec1,combine_vec2),betax=c(betax1,betax2))),'data/out_fit_simulation_maprect_nonvarying_v3.rds')
+saveRDS(list(model=out_fit,true=list(alpha=c(combine_vec1,combine_vec2),betax=c(betax1,betax2))),'data/out_fit_simulation_maprect_nonvarying_v5.rds')
 ```
 
 We first do an $\hat{R}$ check to make sure the model converged. Some of the Rhats are higher than 1.1, but further analysis reveals that some of the parameters took longer to converge but are still in the right location, as is evidenced by the plots below.

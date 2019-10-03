@@ -115,17 +115,25 @@ irf <- function(time=1,shock=1,
     } else {
       y_1 <- shock
     }
+    
+    output <- tibble(y_shock= y_1,
+                         x_shock=x_1,
+                         time=time,
+                         iter=1:nrow(adj_in))
      
+  } else {
+    
   }
   
   print(paste0('Now processing time point ',time))
   
   # Calculate current values of y and x given posterior uncertainty
-
-    output <- data_frame(y_shock= adj_in[,1]*y_1 + adj_out[,1]*x_1,
-                         x_shock=adj_in[,2]*x_1 + adj_out[,2]*y_1,
-                         time=time,
-                         iter=1:nrow(adj_in))
+  
+  output <- tibble(y_shock= adj_in[,1]*y_1 + adj_out[,1]*x_1,
+                   x_shock=adj_in[,2]*x_1 + adj_out[,2]*y_1,
+                   time=time,
+                   iter=1:nrow(adj_in))
+  
   
   
   if(!is.null(old_output)) {
@@ -165,16 +173,25 @@ irf_2shock <- function(time=1,shock=cbind(1,1),
   if(time==1) {
       x_1 <- shock[,2]
       y_1 <- shock[,1]
+      
+      output <- tibble(y_shock= y_1,
+                           x_shock=x_1,
+                           time=time,
+                           iter=1:nrow(adj_in))
+  } else {
+    
   }
   
   print(paste0('Now processing time point ',time))
   
   # Calculate current values of y and x given posterior uncertainty
   
-  output <- data_frame(y_shock= adj_in[,1]*y_1 + adj_out[,1]*x_1,
-                       x_shock=adj_in[,2]*x_1 + adj_out[,2]*y_1,
-                       time=time,
-                       iter=1:nrow(adj_in))
+  output <- tibble(y_shock= adj_in[,1]*y_1 + adj_out[,1]*x_1,
+                   x_shock=adj_in[,2]*x_1 + adj_out[,2]*y_1,
+                   time=time,
+                   iter=1:nrow(adj_in))
+  
+
   
   
   if(!is.null(old_output)) {
