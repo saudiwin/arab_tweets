@@ -44,7 +44,11 @@ elite_codings_dem <- read_csv("data/2d_coding.csv") %>%
 # write out codings for paper
 
 select(elite_codings_sect,Username,`Secularist/Islamist`=coding) %>% 
-  xtable::xtable(align='rll') %>% 
+  left_join(select(elite_codings_dem,param_name,`Democrat/Authoritarian`=codingd2,`Democracy Score`=med_est),
+            by=c(Username="param_name")) %>% 
+  mutate(`Democracy Score`=round(`Democracy Score`,2)) %>% 
+  filter(!is.na(`Democracy Score`)) %>% 
+  xtable::xtable(align='rllll') %>% 
   print(type='latex',file='list_elites.tex',
         include.rownames=F,
         floating=F,
