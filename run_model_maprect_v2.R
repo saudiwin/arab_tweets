@@ -19,7 +19,7 @@ require(lubridate)
 day_count <- 1
 
 # whether to run a sample for testing purposes
-sample_users <- T
+sample_users <- F
 
 # Load in revised codings
 # remove jasmine foundation because it is a-political
@@ -249,18 +249,20 @@ all_data <- combined_zero %>%
   select(-coup) %>% 
   mutate(country=1L) %>% 
   select(cit_ids,n,country,time_three,coding_numd1,coding_numd2) %>% 
-  gather(key = "variable",value="index",-cit_ids) %>% 
-  arrange(cit_ids,desc(index)) %>% 
-  split(f=combined_zero$cit_ids) %>% 
+  arrange(cit_ids,desc(n)) %>% 
+  gather(key = "variable",value="index",-cit_ids)
+
+all_data_split <- all_data %>% 
+  split(f=all_data$cit_ids) %>% 
   lapply(function(d) d$index)
 
 
 
-all_data_array <- abind::abind(all_data,along=2)
+all_data_array <- abind::abind(all_data_split,along=2)
 
 # calculate missing data per shard
 num_shard <- length(unique(combined_zero$cit_ids))
-missingd <- apply(all_data_array,2,function(c) sum(c[4:(nrow(combined_zero)/num_shard)]==99999))
+missingd <- apply(all_data_array,2,function(c) sum(c==99999))
 
 # create matrix of IDs to pass along with data
 
@@ -286,8 +288,8 @@ time_points=as.matrix(1:max(combined_zero$cit_ids)),
 start_vals=rep(c(-.5,-.5,.5,.5),2),
 time_gamma=distinct(times,time_three,coup) %>% slice(-n()) %>% pull(coup))
 
-# stan_rdump(ls(out_data),file="data/to_maprect_cluster.R",
-#            envir = list2env(out_data))
+stan_rdump(ls(out_data),file="data/to_maprect_cluster.R",
+           envir = list2env(out_data))
 
 # create initial starting values
 
@@ -306,17 +308,17 @@ init_list <- list(varparams=array(rnorm(all_data_array[2]*6,0,0.25),
      betax1=runif(4,-0.5,0.5),
      betax2=runif(4,-0.5,0.5))
 
-# stan_rdump(ls(init_list),file="data/to_maprect_init.R",
-#            envir = list2env(init_list))
+stan_rdump(ls(init_list),file="data/to_maprect_init.R",
+           envir = list2env(init_list))
 
 # actually run the model 
 
-Sys.setenv(STAN_NUM_THREADS = 4)
-
-current_stan_mod <- stan_model(file="irt_var_maprect_nonvarying_2d_v3.stan")
-
-test_stan <- sampling(current_stan_mod,
-                      data=out_data,
-                      chains=1,
-                      cores=1,
-                      iter=2000)
+# Sys.setenv(STAN_NUM_THREADS = 4)
+# 
+# current_stan_mod <- stan_model(file="irt_var_maprect_nonvarying_2d_v3.stan")
+# 
+# test_stan <- sampling(current_stan_mod,
+#                       data=out_data,
+#                       chains=1,
+#                       cores=1,
+#                       iter=2000)
